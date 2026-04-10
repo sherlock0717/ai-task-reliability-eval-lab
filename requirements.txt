@@ -1,0 +1,2 @@
+# v0.1: minimal runtime for local experiments (JSON/JSONL + optional schema validation)
+jsonschema>=4.0,<5

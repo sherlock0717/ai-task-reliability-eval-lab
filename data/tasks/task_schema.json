@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-task-reliability-eval-lab.local/schemas/task.json",
+  "title": "EvalTask",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "task_name",
+    "task_type",
+    "difficulty",
+    "scenario",
+    "description",
+    "input_files",
+    "prompt",
+    "constraints",
+    "must_include",
+    "must_not_do",
+    "expected_output_type",
+    "expected_output_schema",
+    "reference_answer",
+    "evaluation_hints",
+    "human_check_points",
+    "metadata"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier for the task within a dataset version."
+    },
+    "task_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_type": {
+      "type": "string",
+      "enum": ["extraction", "rewrite", "qa"]
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["easy", "medium", "hard"]
+    },
+    "scenario": {
+      "type": "string",
+      "description": "Short label of the real-world setting (e.g. job search, internal KB)."
+    },
+    "description": {
+      "type": "string"
+    },
+    "input_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "role"],
+        "properties": {
+          "path": { "type": "string" },
+          "role": {
+            "type": "string",
+            "description": "e.g. primary_source, attachment, rubric"
+          }
+        }
+      }
+    },
+    "prompt": {
+      "type": "string",
+      "description": "User-facing instruction shown to the workflow / model."
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "must_include": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "must_not_do": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "expected_output_type": {
+      "type": "string",
+      "enum": ["text", "markdown", "json"]
+    },
+    "expected_output_schema": {
+      "description": "JSON Schema for structured output when expected_output_type is json; null if not applicable.",
+      "oneOf": [{ "type": "object" }, { "type": "null" }]
+    },
+    "reference_answer": {
+      "description": "Optional gold or reference for human or offline comparison.",
+      "oneOf": [{ "type": "string" }, { "type": "object" }, { "type": "null" }]
+    },
+    "evaluation_hints": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "human_check_points": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Dataset-specific tags (locale, domain, source, version)."
+    }
+  }
+}

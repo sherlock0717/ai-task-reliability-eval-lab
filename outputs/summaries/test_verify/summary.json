@@ -1,0 +1,31 @@
+{
+  "source": "D:\\ai-task-reliability-eval-lab\\outputs\\scored_runs\\test_verify\\scores.jsonl",
+  "count": 3,
+  "passed": 3,
+  "failed": 0,
+  "avg_score": 1.0,
+  "success_traces": 3,
+  "failed_traces": 0,
+  "checks_overview": {
+    "expected_output_type": {
+      "pass": 3,
+      "fail": 0
+    },
+    "must_include": {
+      "pass": 3,
+      "fail": 0
+    },
+    "must_not_do": {
+      "pass": 3,
+      "fail": 0
+    },
+    "json_parseable": {
+      "pass": 3,
+      "fail": 0
+    }
+  },
+  "experiment_id": "test_verify",
+  "tasks_file": "D:\\ai-task-reliability-eval-lab\\data\\tasks\\v1_tasks.jsonl",
+  "traces_path": "D:\\ai-task-reliability-eval-lab\\outputs\\runs\\test_verify\\traces.jsonl",
+  "scores_path": "D:\\ai-task-reliability-eval-lab\\outputs\\scored_runs\\test_verify\\scores.jsonl"
+}
