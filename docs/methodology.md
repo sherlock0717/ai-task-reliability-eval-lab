@@ -1,31 +1,31 @@
-# 方法论（v0.1）
+# 方法论（v0.2）
 
 ## 评的是什么
 
 本项目评估的是 **工作流策略（workflow policy）** 在固定任务分布下的表现：例如「单轮直答」「检索增强」「规划执行」「人工门禁」等策略如何影响 **可交付性、约束遵守、可追溯性**，而不是做 **通用模型排行榜**。同一任务上更换模型权重可能改变分数，但实验单元仍是「策略 + 任务 + 运行配置」的组合。
 
-## v0.1 任务类型
+## v0.2：mock / real LLM 双模式
 
-- **extraction**：从给定材料中抽取结构化要点（办公/求职场景，如 JD 信息整理）。
-- **rewrite**：在约束下改写为可交付文体（如简历要点、对外说明）。
-- **qa**：在明确规则下作答；部分任务要求 **严格 JSON** 输出，便于后续程序消费与规则校验。
+- **Mock（默认）**：`USE_REAL_LLM=false` 或未配置 API 时，`DirectAdapter` 使用 `SmartMockTextGenerator`，保证无密钥也可跑通实验闭环并落盘 trace。
+- **Real LLM（可选）**：`USE_REAL_LLM=true` 且 `OPENAI_COMPAT_*` 配置齐全时，通过 **OpenAI-compatible** HTTP 客户端调用 `/v1/chat/completions`（见 `src/clients/openai_compatible.py`）。trace 记录 `provider`、`model_name`、`is_mock`。
 
-任务字段（含 `must_include` / `must_not_do` / `expected_output_type`）见 `data/tasks/task_schema.json` 与 `data/tasks/v1_tasks.jsonl`。
+**注意**：真实模型运行结果受 **prompt、温度、模型、服务端** 影响；本仓库不把单次分数解释为稳定能力排名。
 
-## Candidate 范围（v0.1）
+## 任务与数据
 
-仅实现 **direct** baseline：单轮调用、无检索、无多步规划、无人工确认。适配器层通过抽象基类预留其它 candidate，避免把 direct 逻辑散布在 runner 中。
+- 任务集：`data/tasks/v1_tasks.jsonl`（v0.2：12 条；含 extraction / rewrite / qa）。
+- 素材：`data/fixtures/**` 以 `.md` / `.txt` 为主，便于 GitHub 阅读。
 
-## 评分思路（规则优先）
+## 评分与归因
 
-v0.1 使用 **可复现的规则检查** 作为基线信号：
-
-1. **expected_output_type**：文本非空，或 JSON 可解析为对象/数组（依任务约定）。
-2. **must_include / must_not_do**：字符串级检查（用于锚定关键信息、禁用套话或违规措辞）。
-3. **JSON 可解析**：当 `expected_output_type` 为 `json` 时，要求输出可解析（解析结果可为 dict/list）。
-
-规则分数 **不是** 语义质量的全貌；它用于快速失败检测与回归对比。后续可叠加 LLM-as-judge、人工评分或对照 `reference_answer`，但不在 v0.1 强制依赖外部平台。
+- **Rule scoring**：硬规则检查（类型、锚点短语、禁用短语、JSON 可解析）。
+- **Quality proxy**：轻量启发式指标（覆盖度、引用样式信号等），见 `docs/rubric.md`。
+- **Failure taxonomy**：规则型映射到初步失败类型，见 `docs/failure_taxonomy.md`。
 
 ## 可追溯性
 
-每次运行写入 **trace**（输入快照、原始输出、规范化输出、错误、耗时、token 占位等），支持对失败样例做离线复盘与策略迭代。
+每次运行写入 **trace**（输入快照、原始输出、规范化输出、错误、耗时、token、provider/model/is_mock 等），支持离线复盘与策略迭代。
+
+## 刻意不做
+
+复杂前端、数据库、外部通用评测平台、通用 SaaS 化——保持仓库可作为短期 GitHub 展示项目。

@@ -1,20 +1,21 @@
 # AI Task Reliability Eval Lab
 
-本仓库不是通用大模型平台，而是一套用于比较 **AI 工作流策略（workflow policy）** 可靠性的本地实验工程：给定同一批贴近办公/求职/知识工作的任务样本，用不同候选策略（candidate）跑任务、落盘 trace、做可复现的规则评分，并输出汇总结果。
+本仓库不是通用大模型平台，而是一套用于比较 **AI 工作流策略（workflow policy）** 可靠性的本地实验工程：给定贴近办公/求职/知识工作的任务样本，用候选策略（candidate）跑任务、落盘 trace、做规则与 **quality proxy** 汇总，并导出 **summary + 图表**，便于 GitHub 展示与复盘。
 
-## v0.1 范围（求职展示版 / 最小闭环）
+## v0.2 范围（可展示实验版）
 
-- **任务**：从 `data/tasks/v1_tasks.jsonl` 读取样本；任务结构由 `data/tasks/task_schema.json` 描述（`extraction` / `rewrite` / `qa`）。
-- **候选策略**：仅实现 **direct** baseline（单轮直答；无检索、无规划、无人工确认）。代码通过 `WorkflowAdapter` 预留 `retrieve` / `planexec` / `humangate` 等扩展点，不在 v0.1 写死实现细节。
-- **执行与落盘**：每条任务生成一条 **trace**（JSONL），写入 `outputs/runs/<experiment_id>/traces.jsonl`；单条调试运行写入 `outputs/runs/single_<run_id>/traces.jsonl`。
-- **评分**：`src/scorers/rule_scorer.py` 做基础规则检查（输出类型、`must_include` / `must_not_do`、JSON 可解析等），结果写入 `outputs/scored_runs/<experiment_id>/scores.jsonl`。
-- **汇总**：批量跑完后生成 `outputs/summaries/<experiment_id>/summary.json`。
-- **刻意不做**：复杂前端、数据库、外部评测平台、通用 SaaS 化。
+- **任务**：`data/tasks/v1_tasks.jsonl` 共 **12** 条（extraction / rewrite / qa 各 4）；结构化定义见 `data/tasks/task_schema.json`。
+- **素材**：`data/fixtures/{extraction,rewrite,qa}/` 下的 `.md` / `.txt`（可读、可版本管理）。
+- **候选策略**：**direct** baseline（单轮直答）。支持 **Mock（默认）** 与 **OpenAI-compatible 真实 LLM（可选）**；适配器仍通过抽象接口预留 retrieve / planexec / humangate。
+- **评分**：规则评分 + `quality_proxy`（**不是**最终语义评测；见 `docs/rubric.md`）。
+- **归因**：规则型 failure taxonomy（见 `docs/failure_taxonomy.md`）。
+- **产出**：`outputs/runs/`、`outputs/scored_runs/`、`outputs/summaries/`、`outputs/charts/`。
+- **刻意不做**：复杂前端、数据库、外部通用评测 SaaS。
 
 ## 环境
 
 - Python **3.9+**
-- 依赖见 `requirements.txt`（v0.1 仅需要 `jsonschema` 用于可选的任务校验）。
+- 依赖见 `requirements.txt`（`jsonschema`、`python-dotenv`、`matplotlib`）。
 
 ```bash
 python -m venv .venv
@@ -22,93 +23,108 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+### Mock 与 Real LLM
+
+| 模式 | 条件 | 行为 |
+|------|------|------|
+| **Mock** | `USE_REAL_LLM=false`（默认）或缺少 API 配置 | `DirectAdapter` 使用离线 Smart Mock，trace 中 `is_mock=true`，`model_name=mock`。 |
+| **Real LLM** | `USE_REAL_LLM=true` 且 `OPENAI_COMPAT_BASE_URL`、`OPENAI_COMPAT_API_KEY`、`OPENAI_COMPAT_MODEL` 均非空 | 调用 OpenAI-compatible `/v1/chat/completions`；trace 记录 `provider=openai-compatible`、实际 `model_name`、`is_mock=false`。 |
+
+复制 `.env.example` 为 `.env` 并填写（**不要**把真实密钥提交到 Git）：
+
+```bash
+copy .env.example .env
+```
+
+**推荐用模块方式运行**（解释器包上下文正确）；亦支持直接运行脚本文件（runner/plot 顶部含 `sys.path` 兼容补丁），见下文。
+
 ## 目录结构（核心）
 
 ```
 data/
+  fixtures/             # v0.2 任务素材（按类型分目录）
   tasks/
-    task_schema.json    # 任务 JSON Schema
-    v1_tasks.jsonl      # v0.1 样例任务（JSONL）
-  samples/              # 任务引用的示例输入文件（JD、政策片段等）
+    task_schema.json
+    v1_tasks.jsonl
 src/
-  adapters/             # 工作流适配器（direct baseline + 基类）
-  runners/              # CLI：单条 / 批量实验
-  traces/               # trace 结构与 JSONL 记录器
-  scorers/              # 规则评分
-  analysis/             # 汇总
-  utils/                # JSONL / IO 工具
-outputs/                # 运行产物（runs / scored_runs / summaries）
+  adapters/             # direct baseline（mock / real）
+  clients/              # OpenAI-compatible HTTP 客户端
+  config/               # 环境配置加载
+  runners/
+  traces/
+  scorers/              # rule + quality proxy
+  analysis/             # summarize + plot + failure taxonomy
+  utils/
+outputs/
+  runs/ scored_runs/ summaries/ charts/
 docs/
-  methodology.md        # 方法论说明
-configs/                # 预留：后续多候选配置（v0.1 可不依赖）
+  methodology.md  rubric.md  failure_taxonomy.md
+scripts/
+  gen_v1_tasks.py       # 可选：从脚本再生 JSONL（一般直接用仓库内已生成文件即可）
 ```
 
 ## 如何运行
 
-在项目根目录（本仓库根目录）执行，确保当前工作目录为根目录，以便解析 `data/` 下相对路径。
+在**仓库根目录**执行，以便 `data/` 相对路径解析正确。
 
-### 推荐方式 vs 兼容方式
+### 推荐 vs 兼容
 
-| 方式 | 示例 | 说明 |
-|------|------|------|
-| **推荐** | `python -m src.runners.run_single_task ...` | 以包方式运行：解释器会正确设置包上下文与 `sys.path`，`from src...` 由 Python 按包解析，行为与打包/测试一致。 |
-| **兼容** | `python .\src\runners\run_single_task.py ...` | 直接跑脚本文件也可：runner 顶部在 `__package__` 为空时会把仓库根目录插入 `sys.path`，从而仍能 `import src`。 |
+| 方式 | 示例 |
+|------|------|
+| 推荐 | `python -m src.runners.run_single_task ...` |
+| 兼容 | `python .\src\runners\run_single_task.py ...` |
 
-更推荐使用 **`python -m ...`**：不依赖脚本里的路径补丁、与 [PEP 338](https://peps.python.org/pep-0338/) 的模块执行语义一致，也避免将来移动入口文件时产生歧义。兼容方式便于在资源管理器中双击或 IDE 里「运行当前文件」调试。
+更推荐 `python -m`：包导入与 PEP 338 行为一致；兼容方式便于 IDE「运行当前文件」。
 
 ### 单条任务（direct）
 
-```bash
-python -m src.runners.run_single_task --task-id v1-qa-001
-```
-
-兼容（需在仓库根目录执行，或自行保证 `data/` 相对路径可用）：
+**Mock：**
 
 ```bash
-python .\src\runners\run_single_task.py --task-id v1-qa-001
+python -m src.runners.run_single_task --task-id v1-qa-faq-005
 ```
 
-常用参数：
+**Real LLM：** 配置好 `.env` 后同上（适配器自动切换）。
 
-- `--tasks-file`：自定义任务 JSONL（默认 `data/tasks/v1_tasks.jsonl`）
-- `--validate-schema`：用 `data/tasks/task_schema.json` 校验该条任务
-- `--output-dir`：自定义 trace 输出目录（默认 `outputs/runs/single_<uuid>/`）
-
-评分结果默认写在 `outputs/scored_runs/single_<同一 run 目录名>/scores.jsonl`（与 trace 目录名对齐）。
-
-### 批量实验（direct，全量 v1_tasks.jsonl）
+### 批量实验（`v1_tasks.jsonl` 全量）
 
 ```bash
-python -m src.runners.run_experiment
+python -m src.runners.run_experiment --experiment-id my_run
 ```
 
-兼容：
-
-```bash
-python .\src\runners\run_experiment.py
-```
-
-可选：
-
-- `--experiment-id my_run`：指定输出子目录名（默认 UTC 时间戳 `exp_...`）
-- `--tasks-file`：自定义任务集
+兼容：`python .\src\runners\run_experiment.py --experiment-id my_run`
 
 产物：
 
-- `outputs/runs/<experiment_id>/traces.jsonl`
-- `outputs/scored_runs/<experiment_id>/scores.jsonl`
-- `outputs/summaries/<experiment_id>/summary.json`
+- `outputs/runs/<id>/traces.jsonl`
+- `outputs/scored_runs/<id>/scores.jsonl`（含 `quality_proxy`、`failure_taxonomy`）
+- `outputs/summaries/<id>/summary.json`
 
-### 仅汇总已有 scores.jsonl
+### 生成 summary（可选单独跑）
 
 ```bash
-python -m src.analysis.summarize outputs/scored_runs/<experiment_id>/scores.jsonl --out outputs/summaries/<experiment_id>/summary.json
+python -m src.analysis.summarize outputs/scored_runs/my_run/scores.jsonl --out outputs/summaries/my_run/summary.json
 ```
 
-## Mock 与后续接入真实 LLM
+### 生成图表（matplotlib）
 
-v0.1 默认使用 **`MockTextGenerator`** 生成看起来像任务类型的文本/JSON，以便无 API Key 也能跑通闭环。将 `DirectAdapter(generator=...)` 换成实现 `TextGenerator` 协议的真实客户端即可；`token_usage`、`estimated_cost` 等字段已在 trace 中预留。
+在已有 `scores.jsonl` 后：
+
+```bash
+python -m src.analysis.plot_summary --scores-jsonl outputs/scored_runs/my_run/scores.jsonl --out-dir outputs/charts/my_run
+```
+
+将生成：
+
+- `pass_rate_by_task_type.png`
+- `pass_rate_by_difficulty.png`
+- `quality_proxy_overview.png`
+- `failure_type_distribution.png`
+
+## 关于 “quality proxy”
+
+`quality_proxy` 指标（如 `citation_presence`、`constraint_hit_rate`）只是 **启发式代理信号**，用于概览与排序线索；**不能**替代人工审核、对照答案或 LLM-as-judge 等更严谨评测。详见 `docs/rubric.md`。
 
 ## 许可证与数据
 
-样例任务与样例文件为演示用途；邮箱与域名多为虚构，请勿用于真实投递。
+样例任务与素材为演示用途；邮箱与域名多为虚构，请勿用于真实投递。

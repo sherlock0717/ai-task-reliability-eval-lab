@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from src.adapters.direct_adapter import DirectAdapter
-from src.scorers.rule_scorer import score_task
+from src.runners.scoring import compose_scored_row
 from src.traces.recorder import append_trace
 from src.traces.schema import TraceRecord
 from src.utils.io import build_input_snapshot
@@ -127,22 +127,21 @@ def main(argv: Optional[List[str]] = None) -> int:
         estimated_cost=result.get("estimated_cost"),
         started_at=started_at,
         finished_at=finished_at,
+        provider=str(result.get("provider") or ""),
+        model_name=str(result.get("model_name") or ""),
+        is_mock=bool(result.get("is_mock", True)),
     )
 
     append_trace(traces_path, record)
 
-    scored = score_task(
+    scored_row = compose_scored_row(
         task,
-        result.get("normalized_output"),
-        raw_output=str(result.get("raw_output", "")),
+        result,
+        input_snapshot=input_snapshot,
+        run_id=run_id,
+        experiment_id=out_dir.name,
+        candidate_id=adapter.candidate_id,
     )
-    scored_row = {
-        "run_id": run_id,
-        "experiment_id": out_dir.name,
-        "candidate_id": adapter.candidate_id,
-        "trace_status": result.get("status"),
-        **scored,
-    }
     from src.utils.jsonl import append_jsonl
 
     append_jsonl(scored_path, scored_row)
@@ -150,7 +149,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     print(json.dumps(scored_row, ensure_ascii=False, indent=2))
     print(f"\nTrace: {traces_path}", file=sys.stderr)
     print(f"Scored: {scored_path}", file=sys.stderr)
-    return 0 if scored.get("passed") else 1
+    return 0 if scored_row.get("passed") else 1
 
 
 if __name__ == "__main__":

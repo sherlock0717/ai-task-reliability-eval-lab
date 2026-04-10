@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 
 from src.adapters.direct_adapter import DirectAdapter
 from src.analysis.summarize import summarize_scored_file, write_summary_json
-from src.scorers.rule_scorer import score_task
+from src.runners.scoring import compose_scored_row
 from src.traces.recorder import append_trace
 from src.traces.schema import TraceRecord
 from src.utils.io import build_input_snapshot
@@ -106,21 +106,20 @@ def main(argv: Optional[List[str]] = None) -> int:
             estimated_cost=result.get("estimated_cost"),
             started_at=started_at,
             finished_at=finished_at,
+            provider=str(result.get("provider") or ""),
+            model_name=str(result.get("model_name") or ""),
+            is_mock=bool(result.get("is_mock", True)),
         )
         append_trace(traces_path, record)
 
-        scored = score_task(
+        scored_row = compose_scored_row(
             task,
-            result.get("normalized_output"),
-            raw_output=str(result.get("raw_output", "")),
+            result,
+            input_snapshot=input_snapshot,
+            run_id=run_id,
+            experiment_id=exp_id,
+            candidate_id=adapter.candidate_id,
         )
-        scored_row = {
-            "run_id": run_id,
-            "experiment_id": exp_id,
-            "candidate_id": adapter.candidate_id,
-            "trace_status": result.get("status"),
-            **scored,
-        }
         append_jsonl(scores_path, scored_row)
 
     summary = summarize_scored_file(scores_path)
@@ -134,6 +133,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     print(f"\nTraces: {traces_path}", file=sys.stderr)
     print(f"Scores: {scores_path}", file=sys.stderr)
     print(f"Summary: {summary_path}", file=sys.stderr)
+    charts_dir = root / "outputs" / "charts" / exp_id
+    print(
+        f"Charts: run  python -m src.analysis.plot_summary  --scores-jsonl {scores_path}  "
+        f"--out-dir {charts_dir}",
+        file=sys.stderr,
+    )
 
     failed = int(summary.get("failed", 0))
     return 0 if failed == 0 else 1

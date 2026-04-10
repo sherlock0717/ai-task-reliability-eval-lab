@@ -30,6 +30,9 @@ def trace_from_dict(data: Mapping[str, Any]) -> "TraceRecord":
         estimated_cost=data.get("estimated_cost"),
         started_at=str(data["started_at"]),
         finished_at=str(data["finished_at"]),
+        provider=str(data.get("provider") or ""),
+        model_name=str(data.get("model_name") or ""),
+        is_mock=bool(data.get("is_mock", True)),
     )
 
 
@@ -53,3 +56,6 @@ class TraceRecord:
     estimated_cost: Optional[float] = None
     started_at: str = ""
     finished_at: str = ""
+    provider: str = ""
+    model_name: str = ""
+    is_mock: bool = True

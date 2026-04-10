@@ -1,2 +1,4 @@
-# v0.1: minimal runtime for local experiments (JSON/JSONL + optional schema validation)
+# v0.2: local experiments (JSON/JSONL + optional schema validation + charts + env)
 jsonschema>=4.0,<5
+python-dotenv>=1.0,<2
+matplotlib>=3.8,<4
