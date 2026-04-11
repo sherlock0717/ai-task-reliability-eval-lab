@@ -25,8 +25,10 @@
 
 ## 展示页（GitHub Pages）
 
-- **源码目录**：`site/showcase/`（`index.html` + `style.css` + `script.js` + `assets/`）
-- **托管占位**：在 GitHub 仓库 **Settings → Pages** 中，通常可将构建产物发布到 **`gh-pages` 分支根目录**，或使用 **GitHub Actions** 将 `site/showcase/` 部署到 Pages。若仅启用 “Branch /docs folder”，可将展示页内容同步到 `docs/`（根目录）再启用（按你偏好的工作流二选一即可）。
+- **原始展示页目录**：`site/showcase/`（`index.html` + `style.css` + `script.js` + `assets/`）
+- **Pages 发布目录**：与 `site/showcase/` 内容同步的副本位于仓库根目录 **`docs/`**（含 `docs/index.html`、`docs/assets/...`），相对路径与 `site/showcase` 一致，可独立作为静态站根目录使用。
+- **GitHub Pages 设置**：**推荐使用 `main` 分支下的 `/docs` 文件夹作为发布来源**（Repository → Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: `main`，Folder: **`/docs`**）。
+- 其他方式（如 `gh-pages` 分支、Actions 部署）仍可按需使用；更新展示内容后请重新将 `site/showcase/` 同步到 `docs/`（当前为手动拷贝，避免改动 Python 代码）。
 - **建议公开访问 URL 占位**：`https://<your-username>.github.io/<repo-name>/`（启用 Pages 后替换为实际地址并写回 README 与本页链接）。
 
 ### 项目截图占位
@@ -82,8 +84,8 @@ src/
   adapters/ clients/ config/
   runners/ traces/ scorers/ analysis/ utils/
 outputs/                # 本地实验产物（大文件建议 .gitignore）
-docs/                   # 方法论、rubric、失败归因、实验结果摘要
-site/showcase/          # 静态展示页（GitHub Pages）
+docs/                   # 文档（*.md）+ 与 site/showcase 同步的 Pages 静态文件（index.html、assets/…）
+site/showcase/          # 展示页源码目录（与 docs 中静态部分保持同步）
 scripts/ gen_v1_tasks.py
 ```
 

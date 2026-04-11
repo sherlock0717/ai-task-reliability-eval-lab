@@ -1,12 +1,9 @@
 /**
- * 加载汇总 JSON 并填充表格。GitHub Pages 同域 fetch 可用；
- * 本地请用：python -m http.server（勿依赖 file://）。
+ * Gate、数据加载、滚动显现。本地预览请：python -m http.server
  */
-
 (function () {
   var DATA_URL = "assets/data/summary_v0_2_deepseek.json";
 
-  /** 规则检查项英文名 -> 页面展示中文 */
   var CHECK_LABELS = {
     expected_output_type: "输出类型是否符合题目要求",
     must_include: "必备关键词是否都出现",
@@ -14,18 +11,31 @@
     json_parseable: "若要求 JSON，是否能解析",
   };
 
-  /** 代理指标 key -> 中文 + 一句人话 */
   var QP_LABELS = {
-    required_item_coverage: "必备词覆盖度（均值）：有没有把题目要求的词写进输出里",
-    forbidden_violation_count_avg: "禁用词命中次数（均值）：出现一次算一次",
-    constraint_hit_rate: "约束句粗匹配（很粗，仅供参考）：实现朴素，别当真理",
-    output_nonempty_rate: "输出是否非空（比例）",
-    json_valid_rate: "JSON 语法是否有效（比例，仅相关题）",
-    citation_presence_avg: "引用样式信号（仅部分需要引用的题）",
+    required_item_coverage: "必备词覆盖度（均值）——题目要求的词是否写进输出",
+    forbidden_violation_count_avg: "禁用词命中次数（均值）",
+    constraint_hit_rate: "约束句粗匹配（实现很粗，仅供参考）",
+    output_nonempty_rate: "输出非空比例",
+    json_valid_rate: "JSON 语法有效比例（相关题）",
+    citation_presence_avg: "引用样式信号（仅部分题）",
   };
+
+  var QP_ORDER = [
+    "required_item_coverage",
+    "forbidden_violation_count_avg",
+    "constraint_hit_rate",
+    "output_nonempty_rate",
+    "json_valid_rate",
+    "citation_presence_avg",
+  ];
 
   function el(id) {
     return document.getElementById(id);
+  }
+
+  function fmtNum(n) {
+    if (typeof n !== "number" || n !== n) return "—";
+    return String(n);
   }
 
   function showError(msg) {
@@ -35,12 +45,7 @@
       b.classList.add("visible");
     }
     var s = el("load-status");
-    if (s) s.textContent = "数据未加载（见上方提示）";
-  }
-
-  function fmtNum(n) {
-    if (typeof n !== "number" || n !== n) return "—";
-    return String(n);
+    if (s) s.textContent = "数据未加载";
   }
 
   function renderOverview(data) {
@@ -52,7 +57,7 @@
       ["规则通过题数", data.passed],
       ["规则未通过题数", data.failed],
       ["平均规则分", data.avg_rule_score],
-      ["执行成功 trace 数（程序跑完无报错）", data.success_traces],
+      ["执行成功 trace 数（程序跑完）", data.success_traces],
       ["执行报错 trace 数", data.failed_traces],
     ];
     rows.forEach(function (row) {
@@ -84,15 +89,6 @@
         tbody.appendChild(tr);
       });
   }
-
-  var QP_ORDER = [
-    "required_item_coverage",
-    "forbidden_violation_count_avg",
-    "constraint_hit_rate",
-    "output_nonempty_rate",
-    "json_valid_rate",
-    "citation_presence_avg",
-  ];
 
   function renderQP(data) {
     var tbody = el("tbody-qp");
@@ -129,30 +125,82 @@
     });
   }
 
-  fetch(DATA_URL)
-    .then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    })
-    .then(function (data) {
-      var status = el("load-status");
-      if (status) {
-        status.textContent =
-          "已加载数据" +
-          (data.experiment_note ? "（" + data.experiment_note + "）" : "") +
-          "。";
-      }
-      renderOverview(data);
-      renderMapTable("tbody-by-type", data.by_task_type);
-      renderMapTable("tbody-by-diff", data.by_difficulty);
-      renderQP(data);
-      renderChecks(data);
-    })
-    .catch(function () {
-      showError(
-        "无法加载 " +
-          DATA_URL +
-          "。请在本目录执行：python -m http.server 8000，再用浏览器打开 http://localhost:8000/（直接双击打开 HTML 可能无法读取数据）。"
-      );
+  function loadSummary() {
+    fetch(DATA_URL)
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        var status = el("load-status");
+        if (status) status.textContent = "数据已载入。";
+        renderOverview(data);
+        renderMapTable("tbody-by-type", data.by_task_type);
+        renderMapTable("tbody-by-diff", data.by_difficulty);
+        renderQP(data);
+        renderChecks(data);
+      })
+      .catch(function () {
+        showError(
+          "无法加载数据文件。请在项目目录执行：python -m http.server 8000，再访问 http://localhost:8000/"
+        );
+      });
+  }
+
+  function initGate() {
+    var gate = el("gate");
+    var app = el("app");
+    var btn = el("gate-enter");
+    if (!gate || !app || !btn) return;
+
+    var entered = false;
+    function enter() {
+      if (entered) return;
+      entered = true;
+      gate.classList.add("gate--out");
+      document.body.classList.remove("gate-active");
+      app.classList.add("app--visible");
+      app.setAttribute("aria-hidden", "false");
+      gate.setAttribute("aria-hidden", "true");
+      gate.setAttribute("inert", "");
+
+      window.setTimeout(function () {
+        gate.style.display = "none";
+      }, 700);
+
+      btn.blur();
+    }
+
+    btn.addEventListener("click", enter);
+  }
+
+  function initReveal() {
+    var sections = document.querySelectorAll("[data-reveal]");
+    if (!sections.length || !("IntersectionObserver" in window)) {
+      sections.forEach(function (s) {
+        s.classList.add("section--visible");
+      });
+      return;
+    }
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("section--visible");
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { rootMargin: "0px 0px -8% 0px", threshold: 0.05 }
+    );
+    sections.forEach(function (s) {
+      io.observe(s);
     });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    initGate();
+    initReveal();
+    loadSummary();
+  });
 })();
