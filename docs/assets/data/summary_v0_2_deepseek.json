@@ -1,0 +1,73 @@
+{
+  "source": "outputs/scored_runs/v0_2_deepseek/scores.jsonl",
+  "experiment_note": "v0.2 DeepSeek 兼容 API 跑批实验（direct baseline）",
+  "total_tasks": 12,
+  "passed": 12,
+  "failed": 0,
+  "avg_rule_score": 1.0,
+  "success_traces": 12,
+  "failed_traces": 0,
+  "checks_overview": {
+    "expected_output_type": {
+      "pass": 12,
+      "fail": 0
+    },
+    "must_include": {
+      "pass": 12,
+      "fail": 0
+    },
+    "must_not_do": {
+      "pass": 12,
+      "fail": 0
+    },
+    "json_parseable": {
+      "pass": 12,
+      "fail": 0
+    }
+  },
+  "by_task_type": {
+    "extraction": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0
+    },
+    "rewrite": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0
+    },
+    "qa": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0
+    }
+  },
+  "by_difficulty": {
+    "easy": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0
+    },
+    "medium": {
+      "total": 6,
+      "passed": 6,
+      "failed": 0
+    },
+    "hard": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0
+    }
+  },
+  "quality_proxy_averages": {
+    "required_item_coverage": 1.0,
+    "forbidden_violation_count_avg": 0.0,
+    "constraint_hit_rate": 0.0,
+    "output_nonempty_rate": 1.0,
+    "json_valid_rate": 1.0,
+    "citation_presence_avg": 0.5
+  },
+  "failure_taxonomy_distribution": {
+    "ok": 12
+  }
+}
