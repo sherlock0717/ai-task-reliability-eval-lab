@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI 任务可靠性评测台 · 项目展示</title>
+    <meta
+      name="description"
+      content="比较不同 AI workflow policy 在真实办公/知识任务上的可靠性差异——实验型项目，非模型排行榜。"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="wrap">
+        <p class="badge">Portfolio / Research prototype</p>
+        <h1>AI 任务可靠性评测台</h1>
+        <p class="lead">
+          这是一个比较不同 <strong>AI workflow policy</strong>（工作流策略）在真实办公/知识类任务上
+          <strong>可靠性差异</strong>的实验型项目：用统一任务样本跑批、落盘 trace、做规则与代理指标汇总，并做失败归因的初版映射。
+        </p>
+        <p class="hero-emphasis">
+          <strong>重点：</strong>项目评估的是「策略/流程」在固定任务分布下的可交付性与约束遵守，<strong>不是</strong>通用模型排行榜；换模型会改变分数，但实验单元仍是「策略 + 任务 + 配置」。
+        </p>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section id="background">
+        <h2>项目背景</h2>
+        <p>
+          普通「对话 demo」往往只展示模型会不会说漂亮话，但真实工作流更关心：<strong>输出是否可用</strong>、<strong>是否违反业务约束</strong>、<strong>失败时能否定位原因</strong>、<strong>哪些场景必须人工接管</strong>。
+        </p>
+        <p>
+          本仓库把任务做成可复现的样本（抽取/改写/问答），用同一套评分与 trace
+          记录，比较不同候选策略的表现差异，并把结果导出为 summary 与图表，便于复盘与展示。
+        </p>
+      </section>
+
+      <section id="methods">
+        <h2>v0.2 方法设计（摘要）</h2>
+        <h3>任务类型（3 类）</h3>
+        <ul>
+          <li><strong>extraction</strong>：从材料中抽取结构化要点（JD、会议纪要、反馈汇总等）。</li>
+          <li><strong>rewrite</strong>：在约束下改写成可交付文本（简历要点、邮件、对内摘要等）。</li>
+          <li><strong>qa</strong>：在规则/FAQ 下作答，部分任务要求严格 JSON 输出。</li>
+        </ul>
+        <h3>Workflow（4 条候选）</h3>
+        <p>
+          架构上预留四条：<strong>direct</strong> / <strong>retrieve</strong> / <strong>planexec</strong> /
+          <strong>humangate</strong>。<strong>诚实说明：</strong>截至 v0.2，公开跑批实验主要完成的是
+          <strong>direct baseline</strong>（单轮直答，可选真实 LLM）；其余 workflow
+          仍停留在适配器与配置层面，尚未作为完整流水线对照实验发布。
+        </p>
+        <h3>评分层（3 层）</h3>
+        <ul>
+          <li><strong>Rule scoring</strong>：可复现硬规则（输出类型、must_include / must_not_do、JSON 可解析等）。</li>
+          <li><strong>Quality proxy</strong>：轻量启发式代理指标（覆盖度、引用样式信号等），<strong>不是</strong>语义金标准。</li>
+          <li><strong>Failure taxonomy</strong>：基于规则与 trace 的初版归因标签，<strong>不是</strong>学习式智能诊断。</li>
+        </ul>
+      </section>
+
+      <section id="results">
+        <h2>实验数据概览（v0.2 · DeepSeek 兼容 API）</h2>
+        <p id="load-status">正在加载 <code>assets/data/summary_v0_2_deepseek.json</code> …</p>
+        <div id="error-banner" class="error-banner" role="alert"></div>
+
+        <p>
+          下列数字来自本仓库一次真实跑批产物的摘要文件（与 <code>outputs/summaries/v0_2_deepseek/summary.json</code> 对齐后复制到本站资源目录）。
+        </p>
+
+        <div class="disclaimer-box" role="note">
+          <strong>评测口径（请先读）：</strong>
+          当前 v0.2 的「通过 / 未通过」主要反映<strong>规则检查结果</strong>，表示输出是否满足结构、字段与基础约束要求；<strong>不等同于</strong>最终语义质量结论，<strong>也不代表</strong>无需人工复核。下表中的「规则通过 / 规则未通过」均指规则层，而非“业务语义已充分验证”。
+        </div>
+
+        <h3>总体</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>指标</th>
+                <th>值</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-overview"></tbody>
+          </table>
+        </div>
+
+        <h3>按 task_type</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>类型</th>
+                <th>任务数</th>
+                <th>规则通过任务数</th>
+                <th>规则未通过任务数</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-by-type"></tbody>
+          </table>
+        </div>
+
+        <h3>按 difficulty</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>难度</th>
+                <th>任务数</th>
+                <th>规则通过任务数</th>
+                <th>规则未通过任务数</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-by-diff"></tbody>
+          </table>
+        </div>
+
+        <h3>规则检查项通过情况</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>检查项</th>
+                <th>规则检查通过数</th>
+                <th>规则检查未通过数</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-checks"></tbody>
+          </table>
+        </div>
+
+        <h3>Quality proxy 均值（代理指标）</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>指标</th>
+                <th>值</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-qp"></tbody>
+          </table>
+        </div>
+
+        <p class="callout">
+          说明：<strong>quality proxy</strong> 仅为代理指标，用于粗粒度概览与 triage；其中
+          <code>constraint_hit_rate</code> 等字段非常粗糙，<strong>不能</strong>解释为“模型是否真正理解约束”。
+        </p>
+
+        <h3>为什么「规则通过率」不是全部</h3>
+        <p>
+          规则通过率只能说明输出在<strong>结构性合规</strong>（类型、锚点短语、禁用短语、JSON 可解析等）上是否达标，<strong>不能</strong>代表语义事实正确、引用可靠或业务可直接采信。
+        </p>
+        <p>
+          它<strong>不能替代人工复核</strong>，尤其涉及合规、对外沟通或高风险决策时。若要逼近“质量定论”，需要更强协议：例如对照金标、抽检、人工标注，以及对 LLM-as-judge 保持审慎。
+        </p>
+        <p>
+          后续若补充 <strong>LLM-as-judge / 人工标注 / 更强失败归因</strong>，也应与规则层结果<strong>并列呈现</strong>，避免把单一通过率写成最终结论。
+        </p>
+      </section>
+
+      <section id="charts">
+        <h2>图表区</h2>
+        <p>图表由 <code>scores.jsonl</code> 经 <code>src/analysis/plot_summary.py</code> 生成，并放入本站资源目录（不直接引用仓库 <code>outputs/</code>）。</p>
+
+        <div class="chart-grid">
+          <div class="chart-card">
+            <img
+              src="assets/charts/v0_2_deepseek/failure_type_distribution.png"
+              alt="失败类型分布柱状图"
+              loading="lazy"
+            />
+            <p class="chart-caption">
+              <strong>failure_type_distribution：</strong>基于<strong>规则型初版</strong>
+              <code>failure taxonomy</code> 的主标签计数。<code>quality proxy</code> 仅为代理指标。当前全部为
+              <code>ok</code>，表示未映射到更高优先级失败桶——<strong>不等于</strong>无幻觉或无事实漂移。
+            </p>
+          </div>
+          <div class="chart-card">
+            <img
+              src="assets/charts/v0_2_deepseek/pass_rate_by_difficulty.png"
+              alt="按难度规则通过率"
+              loading="lazy"
+            />
+            <p class="chart-caption">
+              <strong>pass_rate_by_difficulty：</strong>各难度下<strong>规则层</strong>通过比例（非语义评分）。本次
+              easy / medium / hard 均为 100%（样本量：easy 3、medium 6、hard 3）。<strong>12/12
+              规则通过不代表</strong>可直接生产部署或无需人工复核。
+            </p>
+          </div>
+          <div class="chart-card">
+            <img
+              src="assets/charts/v0_2_deepseek/pass_rate_by_task_type.png"
+              alt="按任务类型规则通过率"
+              loading="lazy"
+            />
+            <p class="chart-caption">
+              <strong>pass_rate_by_task_type：</strong>三类任务各自的<strong>规则通过率</strong>；extraction /
+              rewrite / qa 各 4 题，本次均为 100%。同上，仅为结构性合规统计。
+            </p>
+          </div>
+          <div class="chart-card">
+            <img
+              src="assets/charts/v0_2_deepseek/quality_proxy_overview.png"
+              alt="Quality proxy 概览"
+              loading="lazy"
+            />
+            <p class="chart-caption">
+              <strong>quality_proxy_overview：</strong><code>quality proxy</code> 仅为代理指标均值条形图；例如
+              <code>constraint_hit_rate</code> 为 0 属实现层面的粗匹配结果，<strong>不宜</strong>当作质量定论。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="takeaways">
+        <h2>典型结论（保守表述）</h2>
+        <ul>
+          <li>
+            在本次 <strong>12 条任务、direct baseline、DeepSeek 兼容 API</strong> 的设置下，<strong>规则层未出现结构性失败（12/12 规则通过）</strong>；执行侧 <strong>12/12 trace 执行成功</strong>（无适配器报错）。这属于
+            <strong>workflow reliability 的基础验证</strong>：硬门槛（交付物形态 + 锚点短语 + 禁用短语 + JSON 可解析等）被满足，<strong>不是</strong>最终质量定论。
+          </li>
+          <li>
+            <strong>12/12 规则通过</strong> <strong>不代表</strong>无幻觉、无事实漂移、或可直接生产部署；亦<strong>不能</strong>替代业务侧人工复核。
+          </li>
+          <li>
+            <strong>failure taxonomy</strong> 为<strong>规则型初版</strong>映射；当前全部落在 <code>ok</code> 仅说明未命中更高优先级规则桶，<strong>不等价于</strong>语义无误。
+          </li>
+          <li>
+            <strong>quality proxy</strong> 仅为<strong>代理指标</strong>；其中多项为 1.0 仍应视为粗信号。若要逼近“质量优秀”，需要更强评测协议（对照答案、抽检、必要时谨慎使用 LLM-as-judge）。
+          </li>
+          <li>
+            本实验<strong>不支撑</strong>“模型 A 强于模型 B”的泛化结论；只能说明在该任务集与该 workflow 配置下，<strong>规则检查</strong>是否通过。
+          </li>
+        </ul>
+      </section>
+
+      <section id="structure">
+        <h2>仓库结构（简）</h2>
+        <pre class="tree"><code>data/          任务定义与 fixtures（可读的 .md / .txt 素材）
+src/           Python 实验代码：adapters、clients、scorers、runners、analysis
+outputs/       本地跑批产物（runs / scored_runs / summaries / charts）—建议勿提交大文件
+docs/          方法论、rubric、失败归因说明与实验结果摘要
+site/showcase/ 本展示页（GitHub Pages 静态资源）</code></pre>
+        <p>
+          <strong>data</strong>：任务 JSONL 与素材，保证可复现。<strong>src</strong>：实验闭环代码。<strong>outputs</strong>：一次实验的 trace/score/summary（体积大时可
+          gitignore）。<strong>docs</strong>：对外说明与方法边界。<strong>site</strong>：面向访客的静态页与图表副本。
+        </p>
+      </section>
+
+      <section id="run">
+        <h2>如何运行（开发者）</h2>
+        <p><strong>Mock 模式</strong>（无需 API Key，适合跑通流程）：</p>
+        <pre class="tree"><code>python -m src.runners.run_experiment --experiment-id local_mock</code></pre>
+        <p><strong>Real LLM 模式</strong>：复制 <code>.env.example</code> 为 <code>.env</code>，填写 <code>USE_REAL_LLM=true</code> 与 OpenAI-compatible 端点、密钥、模型名，再运行同样命令。</p>
+        <p class="callout">
+          <strong>安全提示：</strong>不要把含真实密钥的 <code>.env</code> 提交到 Git；展示页也不引用 <code>outputs/</code> 的相对路径，而是使用 <code>site/showcase/assets/</code> 下的副本。
+        </p>
+      </section>
+
+      <section id="roadmap">
+        <h2>后续规划（克制版）</h2>
+        <ul>
+          <li>补齐 <strong>多 workflow</strong> 对照（retrieve / planexec / humangate）与统一实验矩阵。</li>
+          <li>引入更强的质量评测（对照金标、抽检、必要时谨慎引入 LLM-as-judge）。</li>
+          <li>小规模 <strong>人工标注</strong>与错误类型复盘，迭代失败归因。</li>
+          <li>持续明确边界：本项目不是 SaaS，不是通用评测平台。</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <p>静态页位于 <code>site/showcase/</code>，可托管到 GitHub Pages（见仓库 README）。</p>
+      </div>
+    </footer>
+
+    <script src="script.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,250 @@
+/* AI Task Reliability Eval Lab — showcase (static, GitHub Pages friendly) */
+
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --text: #1a1d23;
+  --muted: #5c6370;
+  --border: #e2e5eb;
+  --accent: #1e4d8b;
+  --accent-soft: #e8f0fb;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--text);
+  background: var(--bg);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.wrap {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 1.25rem 4rem;
+}
+
+header.hero {
+  background: linear-gradient(165deg, var(--surface) 0%, var(--accent-soft) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 3rem 0 2.5rem;
+}
+
+header.hero .wrap {
+  padding-bottom: 0;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+h1 {
+  font-size: 1.85rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  line-height: 1.25;
+}
+
+.lead {
+  font-size: 1.05rem;
+  color: var(--muted);
+  max-width: 52rem;
+  margin: 0 0 1rem;
+}
+
+.hero-emphasis {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border-left: 4px solid var(--accent);
+  font-size: 0.95rem;
+}
+
+section {
+  padding: 2.25rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+section:last-of-type {
+  border-bottom: none;
+}
+
+h2 {
+  font-size: 1.25rem;
+  margin: 0 0 1rem;
+  font-weight: 650;
+}
+
+h3 {
+  font-size: 1.05rem;
+  margin: 1.5rem 0 0.5rem;
+  font-weight: 600;
+}
+
+p {
+  margin: 0 0 0.85rem;
+}
+
+ul {
+  margin: 0 0 0.85rem;
+  padding-left: 1.25rem;
+}
+
+li {
+  margin-bottom: 0.35rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+th,
+td {
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  background: #fafbfc;
+  font-weight: 600;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.chart-grid {
+  display: grid;
+  gap: 2rem;
+}
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.chart-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.chart-caption {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.callout {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.disclaimer-box {
+  margin: 1.25rem 0 1.5rem;
+  padding: 1rem 1.15rem;
+  background: #fff9f0;
+  border: 1px solid #e8d4b8;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.disclaimer-box strong {
+  color: var(--text);
+}
+
+.section-note {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+pre.tree {
+  margin: 0;
+  padding: 1rem;
+  background: #0d1117;
+  color: #e6edf3;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+footer {
+  padding: 2rem 0 3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+#load-status {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.error-banner {
+  display: none;
+  background: #fff4e5;
+  border: 1px solid #f0d0a0;
+  color: #5a4a2a;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.error-banner.visible {
+  display: block;
+}
+
+code {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.88em;
+  background: #eef1f5;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
