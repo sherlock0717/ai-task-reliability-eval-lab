@@ -1,26 +1,36 @@
-/**
- * Gate、数据加载、滚动显现。本地预览请：python -m http.server
- */
 (function () {
-  var DATA_URL = "assets/data/summary_v0_2_deepseek.json";
+  var SUMMARY_URL = "assets/data/summary_v0_2_deepseek.json";
+  var TASKS_URL = "assets/data/tasks_v1.json";
 
-  var CHECK_LABELS = {
-    expected_output_type: "输出类型是否符合题目要求",
-    must_include: "必备关键词是否都出现",
-    must_not_do: "是否出现禁用用语",
-    json_parseable: "若要求 JSON，是否能解析",
+  var typeLabels = {
+    extraction: "信息抽取",
+    rewrite: "改写",
+    qa: "问答",
   };
 
-  var QP_LABELS = {
-    required_item_coverage: "必备词覆盖度（均值）——题目要求的词是否写进输出",
-    forbidden_violation_count_avg: "禁用词命中次数（均值）",
-    constraint_hit_rate: "约束句粗匹配（实现很粗，仅供参考）",
-    output_nonempty_rate: "输出非空比例",
-    json_valid_rate: "JSON 语法有效比例（相关题）",
-    citation_presence_avg: "引用样式信号（仅部分题）",
+  var difficultyLabels = {
+    easy: "易",
+    medium: "中",
+    hard: "难",
   };
 
-  var QP_ORDER = [
+  var checkLabels = {
+    expected_output_type: "输出类型符合要求",
+    must_include: "必备内容出现",
+    must_not_do: "未触发禁用表达",
+    json_parseable: "JSON 可解析",
+  };
+
+  var proxyLabels = {
+    required_item_coverage: "必备内容覆盖",
+    forbidden_violation_count_avg: "禁用表达命中均值",
+    constraint_hit_rate: "约束句粗匹配",
+    output_nonempty_rate: "非空输出比例",
+    json_valid_rate: "JSON 有效比例",
+    citation_presence_avg: "引用信号均值",
+  };
+
+  var proxyOrder = [
     "required_item_coverage",
     "forbidden_violation_count_avg",
     "constraint_hit_rate",
@@ -29,178 +39,300 @@
     "citation_presence_avg",
   ];
 
-  function el(id) {
-    return document.getElementById(id);
+  var state = {
+    tasks: [],
+    filter: "all",
+  };
+
+  function $(selector, root) {
+    return (root || document).querySelector(selector);
   }
 
-  function fmtNum(n) {
-    if (typeof n !== "number" || n !== n) return "—";
-    return String(n);
+  function $all(selector, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(selector));
   }
 
-  function showError(msg) {
-    var b = el("error-banner");
-    if (b) {
-      b.textContent = msg;
-      b.classList.add("visible");
+  function setText(selector, text) {
+    var node = $(selector);
+    if (node) node.textContent = text;
+  }
+
+  function formatValue(value) {
+    if (typeof value !== "number" || Number.isNaN(value)) return String(value || "-");
+    if (Number.isInteger(value)) return String(value);
+    return value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+  }
+
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function renderSummary(data) {
+    var total = data.total_tasks || 12;
+    var passed = data.passed || 0;
+    var traces = data.success_traces || 0;
+
+    setText("#hero-total", total);
+    setText("#hero-pass", passed + " / " + total);
+    setText("#hero-traces", traces + " 条");
+    setText("#sum-pass", passed + " / " + total);
+
+    var checksBody = $("#tbody-checks");
+    if (checksBody) {
+      checksBody.innerHTML = Object.keys(data.checks_overview || {})
+        .map(function (key) {
+          var item = data.checks_overview[key];
+          return (
+            "<tr><td>" +
+            escapeHtml(checkLabels[key] || key) +
+            "</td><td>" +
+            escapeHtml(item.pass) +
+            "</td><td>" +
+            escapeHtml(item.fail) +
+            "</td></tr>"
+          );
+        })
+        .join("");
     }
-    var s = el("load-status");
-    if (s) s.textContent = "数据未加载";
+
+    var proxyBody = $("#tbody-proxy");
+    if (proxyBody) {
+      var proxy = data.quality_proxy_averages || {};
+      proxyBody.innerHTML = proxyOrder
+        .filter(function (key) {
+          return Object.prototype.hasOwnProperty.call(proxy, key);
+        })
+        .map(function (key) {
+          return (
+            "<tr><td>" +
+            escapeHtml(proxyLabels[key] || key) +
+            "</td><td>" +
+            escapeHtml(formatValue(proxy[key])) +
+            "</td></tr>"
+          );
+        })
+        .join("");
+    }
+
+    setText("#load-status", "已加载 v0.2 direct 跑批汇总。");
   }
 
-  function renderOverview(data) {
-    var tbody = el("tbody-overview");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-    var rows = [
-      ["题目总数", data.total_tasks],
-      ["规则通过题数", data.passed],
-      ["规则未通过题数", data.failed],
-      ["平均规则分", data.avg_rule_score],
-      ["执行成功 trace 数（程序跑完）", data.success_traces],
-      ["执行报错 trace 数", data.failed_traces],
-    ];
-    rows.forEach(function (row) {
-      var tr = document.createElement("tr");
-      tr.innerHTML = "<td>" + row[0] + "</td><td>" + fmtNum(row[1]) + "</td>";
-      tbody.appendChild(tr);
-    });
-  }
-
-  function renderMapTable(tbodyId, obj) {
-    var tbody = el(tbodyId);
-    if (!tbody || !obj) return;
-    tbody.innerHTML = "";
-    Object.keys(obj)
-      .sort()
-      .forEach(function (key) {
-        var v = obj[key];
-        var tr = document.createElement("tr");
-        tr.innerHTML =
-          "<td>" +
-          key +
-          "</td><td>" +
-          v.total +
-          "</td><td>" +
-          v.passed +
-          "</td><td>" +
-          v.failed +
-          "</td>";
-        tbody.appendChild(tr);
-      });
-  }
-
-  function renderQP(data) {
-    var tbody = el("tbody-qp");
-    if (!tbody) return;
-    var qp = data.quality_proxy_averages || {};
-    tbody.innerHTML = "";
-    QP_ORDER.forEach(function (key) {
-      if (!(key in qp)) return;
-      var label = QP_LABELS[key] || key;
-      var tr = document.createElement("tr");
-      tr.innerHTML = "<td>" + label + "</td><td>" + fmtNum(qp[key]) + "</td>";
-      tbody.appendChild(tr);
-    });
-  }
-
-  function renderChecks(data) {
-    var tbody = el("tbody-checks");
-    if (!tbody) return;
-    var co = data.checks_overview || {};
-    tbody.innerHTML = "";
-    Object.keys(co).forEach(function (name) {
-      var v = co[name];
-      var label = CHECK_LABELS[name] || name;
-      var tr = document.createElement("tr");
-      tr.innerHTML =
-        "<td>" +
-        label +
-        "</td><td>" +
-        v.pass +
-        "</td><td>" +
-        v.fail +
-        "</td>";
-      tbody.appendChild(tr);
-    });
+  function showError(message) {
+    var banner = $("#error-banner");
+    if (banner) {
+      banner.textContent = message;
+      banner.classList.add("is-visible");
+    }
+    setText("#load-status", "数据未加载。");
   }
 
   function loadSummary() {
-    fetch(DATA_URL)
-      .then(function (r) {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.json();
+    fetch(SUMMARY_URL)
+      .then(function (response) {
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.json();
       })
-      .then(function (data) {
-        var status = el("load-status");
-        if (status) status.textContent = "数据已载入。";
-        renderOverview(data);
-        renderMapTable("tbody-by-type", data.by_task_type);
-        renderMapTable("tbody-by-diff", data.by_difficulty);
-        renderQP(data);
-        renderChecks(data);
-      })
+      .then(renderSummary)
       .catch(function () {
-        showError(
-          "无法加载数据文件。请在项目目录执行：python -m http.server 8000，再访问 http://localhost:8000/"
-        );
+        showError("无法加载结果汇总。请在 site/showcase 目录运行 python -m http.server 8000 后访问本页。");
       });
   }
 
-  function initGate() {
-    var gate = el("gate");
-    var app = el("app");
-    var btn = el("gate-enter");
-    if (!gate || !app || !btn) return;
+  function taskCard(task, index) {
+    return (
+      '<button class="task-card" type="button" data-task-id="' +
+      escapeHtml(task.task_id) +
+      '" style="animation-delay:' +
+      index * 35 +
+      'ms">' +
+      '<div class="task-card__meta"><span>' +
+      escapeHtml(task.short_id) +
+      "</span><span>" +
+      escapeHtml(typeLabels[task.task_type] || task.task_type) +
+      " · " +
+      escapeHtml(difficultyLabels[task.difficulty] || task.difficulty) +
+      "</span></div><h3>" +
+      escapeHtml(task.title) +
+      "</h3><p>" +
+      escapeHtml(task.scenario) +
+      "</p></button>"
+    );
+  }
 
-    var entered = false;
-    function enter() {
-      if (entered) return;
-      entered = true;
-      gate.classList.add("gate--out");
-      document.body.classList.remove("gate-active");
-      app.classList.add("app--visible");
-      app.setAttribute("aria-hidden", "false");
-      gate.setAttribute("aria-hidden", "true");
-      gate.setAttribute("inert", "");
+  function renderTasks() {
+    var wall = $("#task-wall");
+    if (!wall) return;
+    var filtered = state.tasks.filter(function (task) {
+      return state.filter === "all" || task.task_type === state.filter;
+    });
+    wall.innerHTML = filtered.map(taskCard).join("");
+    $all(".task-card", wall).forEach(function (button) {
+      button.addEventListener("click", function () {
+        openTask(button.getAttribute("data-task-id"));
+      });
+    });
+  }
 
-      window.setTimeout(function () {
-        gate.style.display = "none";
-      }, 700);
+  function loadTasks() {
+    fetch(TASKS_URL)
+      .then(function (response) {
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.json();
+      })
+      .then(function (tasks) {
+        state.tasks = tasks;
+        renderTasks();
+      })
+      .catch(function () {
+        var wall = $("#task-wall");
+        if (wall) wall.innerHTML = '<p class="error-banner is-visible">无法加载题目数据。</p>';
+      });
+  }
 
-      btn.blur();
+  function openTask(taskId) {
+    var task = state.tasks.find(function (item) {
+      return item.task_id === taskId;
+    });
+    var drawer = $("#task-drawer");
+    if (!task || !drawer) return;
+
+    setText("#drawer-type", typeLabels[task.task_type] || task.task_type);
+    setText("#drawer-title", task.short_id + " · " + task.title);
+    setText("#drawer-scenario", task.scenario_title);
+    setText("#drawer-input", task.input_summary);
+    setText("#drawer-output", task.expected_output);
+
+    var meta = $("#drawer-meta");
+    if (meta) {
+      meta.innerHTML = [
+        task.task_id,
+        typeLabels[task.task_type] || task.task_type,
+        difficultyLabels[task.difficulty] || task.difficulty,
+        task.domain,
+      ]
+        .map(function (item) {
+          return '<span class="pill">' + escapeHtml(item) + "</span>";
+        })
+        .join("");
     }
 
-    btn.addEventListener("click", enter);
+    var constraints = $("#drawer-constraints");
+    if (constraints) {
+      constraints.innerHTML = task.constraints
+        .map(function (item) {
+          return "<li>" + escapeHtml(item) + "</li>";
+        })
+        .join("");
+    }
+
+    var fullWrap = $("#drawer-full-wrap");
+    var full = $("#drawer-full");
+    if (fullWrap && full) {
+      if (task.full_example) {
+        full.textContent = task.full_example;
+        fullWrap.classList.add("is-visible");
+      } else {
+        full.textContent = "";
+        fullWrap.classList.remove("is-visible");
+      }
+    }
+
+    drawer.classList.add("is-open");
+    drawer.setAttribute("aria-hidden", "false");
+    document.body.classList.add("drawer-open");
+  }
+
+  function closeDrawer() {
+    var drawer = $("#task-drawer");
+    if (!drawer) return;
+    drawer.classList.remove("is-open");
+    drawer.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("drawer-open");
+  }
+
+  function initFilters() {
+    $all(".filter").forEach(function (button) {
+      button.addEventListener("click", function () {
+        state.filter = button.getAttribute("data-filter") || "all";
+        $all(".filter").forEach(function (item) {
+          item.classList.toggle("is-active", item === button);
+        });
+        renderTasks();
+      });
+    });
+  }
+
+  function initNav() {
+    var nav = $(".nav");
+    var sections = $all("main section, header.hero");
+    function onScroll() {
+      if (nav) nav.classList.toggle("is-scrolled", window.scrollY > 12);
+      var current = sections
+        .filter(function (section) {
+          return section.offsetTop <= window.scrollY + 120;
+        })
+        .pop();
+      if (!current) return;
+      $all(".nav__links a").forEach(function (link) {
+        link.classList.toggle("is-active", link.getAttribute("href") === "#" + current.id);
+      });
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
   }
 
   function initReveal() {
-    var sections = document.querySelectorAll("[data-reveal]");
-    if (!sections.length || !("IntersectionObserver" in window)) {
-      sections.forEach(function (s) {
-        s.classList.add("section--visible");
+    var nodes = $all("[data-reveal]");
+    if (!("IntersectionObserver" in window)) {
+      nodes.forEach(function (node) {
+        node.classList.add("is-visible");
       });
       return;
     }
-    var io = new IntersectionObserver(
+    var observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            entry.target.classList.add("section--visible");
-            io.unobserve(entry.target);
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
           }
         });
       },
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.05 }
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
     );
-    sections.forEach(function (s) {
-      io.observe(s);
+    nodes.forEach(function (node) {
+      observer.observe(node);
+    });
+  }
+
+  function initDrawer() {
+    $all("[data-close-drawer]").forEach(function (node) {
+      node.addEventListener("click", closeDrawer);
+    });
+    var openButton = $("#open-tasks");
+    if (openButton) {
+      openButton.addEventListener("click", function () {
+        var first = state.tasks.find(function (task) {
+          return state.filter === "all" || task.task_type === state.filter;
+        });
+        if (first) openTask(first.task_id);
+      });
+    }
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") closeDrawer();
     });
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    initGate();
     initReveal();
+    initNav();
+    initFilters();
+    initDrawer();
     loadSummary();
+    loadTasks();
   });
 })();

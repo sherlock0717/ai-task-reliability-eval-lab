@@ -4,347 +4,338 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI 任务可靠性评测台</title>
-    <meta name="description" content="把会说话的 AI 变成可以验收的工作流——真实办公任务上的可靠性实验。" />
+    <meta
+      name="description"
+      content="一个把 AI 输出放进可重复流程里检查的项目，观察任务交付是否稳定、清楚、可复查。"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body class="gate-active">
-    <!-- Gate -->
-    <div id="gate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title" aria-describedby="gate-desc">
-      <div class="gate__bg" aria-hidden="true"></div>
-      <div class="gate__inner">
-        <h1 id="gate-title" class="gate__title">AI 任务可靠性评测台</h1>
-        <p class="gate__subtitle">不是所有会回答的 AI，都能成为可交付的工作流。</p>
-        <p id="gate-desc" class="gate__lead">
-          进入项目，查看 AI 在真实办公任务里到底靠不靠谱。
-        </p>
-        <button type="button" class="gate__btn" id="gate-enter" aria-label="进入项目主内容">进入项目</button>
+  <body>
+    <nav class="nav" aria-label="页面导航">
+      <a class="nav__brand" href="#hero" aria-label="AI 任务可靠性评测台首页">
+        <span class="nav__mark" aria-hidden="true"></span>
+        <span>AI 任务可靠性评测台</span>
+      </a>
+      <div class="nav__links">
+        <a href="#hero">首页</a>
+        <a href="#tasks">题目</a>
+        <a href="#method">方法</a>
+        <a href="#results">结果</a>
+        <a href="#meaning">解读</a>
+        <a href="#limits">边界</a>
       </div>
-    </div>
+    </nav>
 
-    <div id="app" class="app" aria-hidden="true">
-      <nav class="nav-sticky" aria-label="页面导航">
-        <div class="nav-sticky__inner">
-          <a href="#hero">首页</a>
-          <a href="#why">动机</a>
-          <a href="#measure">测什么</a>
-          <a href="#methods">方法</a>
-          <a href="#results">结果</a>
-          <a href="#charts">图表</a>
-          <a href="#meaning">意义</a>
-          <a href="#compare">对比</a>
-          <a href="#limits">局限</a>
-        </div>
-      </nav>
-
-      <header id="hero" class="hero">
-        <div class="hero__bg" aria-hidden="true"></div>
-        <div class="wrap hero__wrap">
-          <h1 class="hero__title">AI 任务可靠性评测台</h1>
-          <p class="hero__hook">把「会说话的 AI」，变成「可以验收的工作流」。</p>
-          <p class="hero__text">
-            面试官和来访者最常问的是：这项目解决什么问题？——我们做的是一套<strong>可重复跑的实验台</strong>：用统一题目、统一验收规则、完整运行记录，回答「这一套 AI
-            工作方式在真实办公题上，能不能稳定交卷」——先谈<strong>靠不靠谱</strong>，再谈模型厉不厉害。
+    <header id="hero" class="hero">
+      <div class="hero__glow hero__glow--one" aria-hidden="true"></div>
+      <div class="hero__glow hero__glow--two" aria-hidden="true"></div>
+      <div class="hero__noise" aria-hidden="true"></div>
+      <div class="wrap hero__grid">
+        <div class="hero__copy" data-reveal>
+          <p class="eyebrow">v0.2 direct baseline · 12 task run</p>
+          <h1>AI 任务可靠性评测台</h1>
+          <p class="hero__lead">
+            一个把 AI 输出放进可重复流程里检查的静态评测样本。它关注任务交付是否稳定、清楚、可复查，而不是一次回答看起来是否漂亮。
           </p>
-          <ul class="hero__tags">
-            <li>12 道真实风格题目</li>
-            <li>离线模拟 / 真实模型双模式</li>
-            <li>规则检查 + 全程执行记录</li>
-          </ul>
+          <p class="hero__text">
+            当前已跑通一轮 12 道真实风格题目，覆盖信息抽取、改写和制度问答。页面展示的是这轮样本在基础规则口径下的结果，以及这些结果适合怎样阅读。
+          </p>
+          <div class="hero__actions">
+            <a class="button button--primary" href="#tasks">查看 12 道真实风格题目</a>
+            <a class="button button--ghost" href="#results">查看本轮结果怎么读</a>
+            <a class="button button--plain" href="https://github.com/sherlock0717/ai-task-reliability-eval-lab" target="_blank" rel="noreferrer">GitHub 仓库</a>
+          </div>
         </div>
-      </header>
+        <aside class="hero__panel" aria-label="本轮结果摘要" data-reveal>
+          <div class="signal">
+            <span class="signal__label">本轮样本</span>
+            <strong id="hero-total">12</strong>
+            <span>道真实风格题目</span>
+          </div>
+          <div class="hero__meter" aria-hidden="true">
+            <span style="--i: 1"></span>
+            <span style="--i: 2"></span>
+            <span style="--i: 3"></span>
+            <span style="--i: 4"></span>
+            <span style="--i: 5"></span>
+            <span style="--i: 6"></span>
+            <span style="--i: 7"></span>
+            <span style="--i: 8"></span>
+            <span style="--i: 9"></span>
+            <span style="--i: 10"></span>
+            <span style="--i: 11"></span>
+            <span style="--i: 12"></span>
+          </div>
+          <dl class="hero__stats">
+            <div>
+              <dt>规则通过</dt>
+              <dd id="hero-pass">12 / 12</dd>
+            </div>
+            <div>
+              <dt>执行记录</dt>
+              <dd id="hero-traces">12 条</dd>
+            </div>
+            <div>
+              <dt>当前主线</dt>
+              <dd>direct</dd>
+            </div>
+          </dl>
+          <p>
+            这轮结果更像一条流程信号：基础结构、字段和约束检查已经跑通；更深入的事实正确性与业务质量仍需单独判断。
+          </p>
+        </aside>
+      </div>
+    </header>
 
-      <main>
-        <section id="why" class="section section--alt" data-reveal>
-          <div class="wrap">
-            <h2 class="section__title">为什么普通 AI demo 不够？</h2>
-            <p class="section__lead">
-              演示里「能聊」往往只解决第一印象；工作里要的是<strong>能不能验收</strong>。
+    <main>
+      <section id="why" class="section section--light" data-reveal>
+        <div class="wrap split">
+          <div>
+            <p class="eyebrow">Why</p>
+            <h2>真实任务里，可靠性通常先落在几个具体问题上。</h2>
+          </div>
+          <div class="plain-list">
+            <article>
+              <h3>输出是否满足明确格式和约束</h3>
+              <p>有些任务需要 JSON、固定字段、必备词或禁用表达。输出像样还不够，先要能被下游接住。</p>
+            </article>
+            <article>
+              <h3>同一套做法能否重复交卷</h3>
+              <p>同一批题、同一套记录、同一套检查口径，才方便讨论这条流程是否稳定。</p>
+            </article>
+            <article>
+              <h3>失败能否被定位和复盘</h3>
+              <p>失败样本需要留下可追溯记录，后续才能判断是格式问题、约束遗漏，还是需要更强的人工判断。</p>
+            </article>
+            <article>
+              <h3>结果是否方便继续人工接手</h3>
+              <p>很多办公任务不会完全交给模型。清楚、结构化、可核对的输出更适合进入人工复核流程。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="tasks" class="section section--tasks" data-reveal>
+        <div class="wrap">
+          <div class="section-head">
+            <p class="eyebrow">Task Set</p>
+            <h2>12 道真实风格题目</h2>
+            <p>
+              题目覆盖抽取、改写、问答三类任务。这里展示的是浏览版摘要，重点保留场景、输入材料、关键约束和期望输出形式。
             </p>
-            <div class="grid-cards grid-cards--4">
-              <article class="card card--hover">
-                <h3 class="card__title">会回答，不等于能交付</h3>
-                <p class="card__body">对话流畅，不代表输出能进表格、能对接下游、能过格式关。</p>
-              </article>
-              <article class="card card--hover">
-                <h3 class="card__title">通过率高，不等于不用人工复核</h3>
-                <p class="card__body">表面全绿，仍可能在事实、口径、合规上翻车——尤其是对外材料。</p>
-              </article>
-              <article class="card card--hover">
-                <h3 class="card__title">跑通一次，不等于稳定可靠</h3>
-                <p class="card__body">没有同一批题、同一套记录，就无法谈「可复现」和「可对比」。</p>
-              </article>
-              <article class="card card--hover">
-                <h3 class="card__title">看起来像对了，不等于满足约束</h3>
-                <p class="card__body">真实任务常有禁词、必备词、固定格式——缺一样就是不合格交付。</p>
-              </article>
+          </div>
+          <div class="task-entry">
+            <div class="task-entry__copy">
+              <strong>打开题目样本墙</strong>
+              <span>按任务类型筛选，点击任一题查看结构化详情；其中 3 道提供更完整示例。</span>
+            </div>
+            <button class="button button--primary" type="button" id="open-tasks">浏览题目</button>
+          </div>
+          <div class="task-filters" role="tablist" aria-label="题目类型筛选">
+            <button class="filter is-active" type="button" data-filter="all">全部</button>
+            <button class="filter" type="button" data-filter="extraction">信息抽取</button>
+            <button class="filter" type="button" data-filter="rewrite">改写</button>
+            <button class="filter" type="button" data-filter="qa">问答</button>
+          </div>
+          <div class="task-wall" id="task-wall" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section id="method" class="section section--light" data-reveal>
+        <div class="wrap method-layout">
+          <div class="section-head section-head--narrow">
+            <p class="eyebrow">Method</p>
+            <h2>项目现在在测什么</h2>
+            <p>当前公开跑通的是 direct 基线：拿到题目后直接生成答案，再进入统一记录与检查流程。</p>
+          </div>
+          <div class="method-block">
+            <div class="method-row">
+              <span>01</span>
+              <div>
+                <h3>三类题目</h3>
+                <p>信息抽取看材料要点能否整理出来；改写看给定素材能否按约束重写；问答看制度或 FAQ 能否转成可用答案。</p>
+              </div>
+            </div>
+            <div class="method-row">
+              <span>02</span>
+              <div>
+                <h3>基础规则检查</h3>
+                <p>先看输出是否满足最基本的格式与约束要求，包括输出类型、必备字段、禁用表达和 JSON 可解析性。</p>
+              </div>
+            </div>
+            <div class="method-row">
+              <span>03</span>
+              <div>
+                <h3>结果概览指标</h3>
+                <p>用几项简单指标快速扫一眼输出覆盖情况，例如非空输出、必备词覆盖、引用信号和结构有效性。</p>
+              </div>
+            </div>
+            <div class="method-row">
+              <span>04</span>
+              <div>
+                <h3>失败记录</h3>
+                <p>把未通过样本按现有规则做初步归类，方便后续复盘。当前这轮没有触发规则失败样本。</p>
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="measure" class="section" data-reveal>
-          <div class="wrap">
-            <h2 class="section__title">我测的不是模型名次，而是工作流靠不靠谱</h2>
-            <p class="section__text">
-              你可以把「工作流」理解成：<strong>接到题目之后，这一套做法（怎么调模型、怎么交卷）能不能 repeatedly 过关</strong>。我们不排「哪个模型聊天第一」，只问在固定题目和固定设定下，<strong>端到端有没有结构性翻车</strong>。
+      <section id="results" class="section section--results" data-reveal>
+        <div class="wrap">
+          <div class="result-intro">
+            <p class="eyebrow">Run Result</p>
+            <h2>本轮结果说明</h2>
+            <p>
+              在当前这组 12 题和当前规则口径下，基础规则检查整体通过。这说明 direct 流程在这轮样本上，基本能稳定给出可解析、结构合规的输出；它不直接覆盖更深入的事实正确性与业务质量判断。
             </p>
-            <div class="callout callout--emphasis">
+          </div>
+
+          <div class="result-summary" aria-label="结果摘要">
+            <div class="summary-tile summary-tile--dark">
+              <span>规则通过</span>
+              <strong id="sum-pass">12 / 12</strong>
+              <p>结构、字段、必备要求和禁用表达在本轮没有触发失败。</p>
+            </div>
+            <div class="summary-tile">
+              <span>任务分布</span>
+              <strong>4 · 4 · 4</strong>
+              <p>抽取、改写、问答三类题目数量均衡。</p>
+            </div>
+            <div class="summary-tile">
+              <span>阅读重点</span>
+              <strong>流程跑通</strong>
+              <p>本轮主要价值在确认基础流程闭环，而不是拉开模型或题型差距。</p>
+            </div>
+          </div>
+
+          <div class="reading-layout">
+            <article class="reading-note">
+              <h3>图表应该怎样看</h3>
               <p>
-                <strong>当前公开、完整跑通实验的，只有「直接一问一答」这条基线（direct）。</strong>代码里虽然留了检索增强、分步规划、人工把关等位置，但它们<strong>还没有</strong>作为成套流水线做完对照——请勿理解成「这几种都已经和 direct 比完一轮」。
+                这些图大多接近满格，说明本轮样本在规则层没有形成明显高低差。它们更适合用来确认执行链路、题型覆盖和检查项状态，而不适合作为质量排名。
               </p>
+              <p>
+                如果后续加入更多样本、人工评分或多工作流对照，图表才会承担更强的区分功能。
+              </p>
+            </article>
+            <div class="mini-charts">
+              <figure>
+                <img src="assets/charts/v0_2_deepseek/pass_rate_by_task_type.png" alt="按任务类型统计的规则通过率图" loading="lazy" />
+                <figcaption>三类题型在规则层齐平，本轮不宜据此判断哪类任务更容易交付。</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/charts/v0_2_deepseek/pass_rate_by_difficulty.png" alt="按难度统计的规则通过率图" loading="lazy" />
+                <figcaption>难度分组也没有拉开差异，说明当前规则检查更偏基础验收。</figcaption>
+              </figure>
             </div>
           </div>
-        </section>
 
-        <section id="methods" class="section section--alt" data-reveal>
-          <div class="wrap">
-            <h2 class="section__title">方法与题目类型</h2>
-
-            <h3 class="subsection__title">三类题目</h3>
-            <div class="grid-cards grid-cards--3">
-              <article class="card card--hover">
-                <h4 class="card__head">信息抽取 <span class="tag">extraction</span></h4>
-                <p class="card__body">从招聘说明、会议纪要、反馈里整理要点，偏「从材料里捞出该交的信息」。</p>
-              </article>
-              <article class="card card--hover">
-                <h4 class="card__head">改写 <span class="tag">rewrite</span></h4>
-                <p class="card__body">在约束下改简历、邮件、对内说明，偏「交出去能用的文体」。</p>
-              </article>
-              <article class="card card--hover">
-                <h4 class="card__head">问答 <span class="tag">qa</span></h4>
-                <p class="card__body">按制度或常见问答回答，有的题要求严格可解析格式（如固定 JSON）。</p>
-              </article>
-            </div>
-
-            <h3 class="subsection__title">当前评测分三层</h3>
-            <p class="section__text">
-              每一层都不是「最终判决书」，而是一步一步把问题收窄。
-            </p>
-            <div class="stack-cards">
-              <article class="panel">
-                <h4 class="panel__title">规则检查</h4>
-                <p class="panel__body">
-                  <strong>人话：</strong>像质检员按清单勾：格式对不对、该出现的词有没有、不能出现的词有没有踩、要不要 JSON
-                  能解析。过了这一关，才谈内容好不好。
-                </p>
-              </article>
-              <article class="panel">
-                <h4 class="panel__title">代理指标</h4>
-                <p class="panel__body">
-                  <strong>人话：</strong>用特别简单的统计，粗看一下覆盖度、是否空输出等。<strong>不等于</strong>语义对错，实现也很粗，不能当排名依据。
-                </p>
-              </article>
-              <article class="panel">
-                <h4 class="panel__title">初版失败归因</h4>
-                <p class="panel__body">
-                  <strong>人话：</strong>按规则把失败粗略归几类，方便统计和复盘。<strong>不是</strong>智能诊断，更不是最终定性。
-                </p>
-              </article>
-            </div>
-            <p class="section__note">以上三层<strong>都不等于</strong>最终语义评测；要谈「内容是否事实正确」，必须另设人工或更严协议。</p>
-          </div>
-        </section>
-
-        <section id="results" class="section" data-reveal>
-          <div class="wrap">
-            <h2 class="section__title">结果概览</h2>
-
-            <div class="insight-card" id="result-howto">
-              <h3 class="insight-card__title">如何理解这些数字？</h3>
-              <ul class="insight-card__list">
-                <li>「规则通过」主要指：<strong>结构与基础要求上没有明显失败</strong>（格式、必备词、禁词、可解析性等）。</li>
-                <li><strong>不等于</strong>最终语义上的「高质量」或「可直接对外发布」。</li>
-                <li><strong>不代表</strong>可以跳过人工复核——尤其在合规、数字口径、对外承诺场景。</li>
-              </ul>
-            </div>
-
-            <p class="load-line" id="load-status">加载数据中…</p>
-            <div id="error-banner" class="error-banner" role="alert"></div>
-
-            <div class="table-panel">
-              <h3 class="table-panel__caption">总体</h3>
+          <div class="detail-grid">
+            <article>
+              <h3>规则细项</h3>
+              <p>每个检查项在本轮均为通过状态。它能确认输出形式与显性约束，没有确认事实是否完整正确。</p>
               <div class="table-scroll">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>指标</th>
-                      <th>数值</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tbody-overview"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="table-grid">
-              <div class="table-panel">
-                <h3 class="table-panel__caption">按题目类型</h3>
-                <div class="table-scroll">
-                  <table class="data-table">
-                    <thead>
-                      <tr>
-                        <th>类型</th>
-                        <th>题数</th>
-                        <th>规则通过</th>
-                        <th>规则未通过</th>
-                      </tr>
-                    </thead>
-                    <tbody id="tbody-by-type"></tbody>
-                  </table>
-                </div>
-              </div>
-              <div class="table-panel">
-                <h3 class="table-panel__caption">按难度</h3>
-                <div class="table-scroll">
-                  <table class="data-table">
-                    <thead>
-                      <tr>
-                        <th>难度</th>
-                        <th>题数</th>
-                        <th>规则通过</th>
-                        <th>规则未通过</th>
-                      </tr>
-                    </thead>
-                    <tbody id="tbody-by-diff"></tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <div class="table-panel">
-              <h3 class="table-panel__caption">规则细项（各有多少题通过）</h3>
-              <div class="table-scroll">
-                <table class="data-table">
+                <table>
                   <thead>
                     <tr>
                       <th>检查项</th>
-                      <th>通过题数</th>
-                      <th>未通过题数</th>
+                      <th>通过</th>
+                      <th>未通过</th>
                     </tr>
                   </thead>
                   <tbody id="tbody-checks"></tbody>
                 </table>
               </div>
-            </div>
-
-            <div class="table-panel">
-              <h3 class="table-panel__caption">代理指标（粗参考，非语义判决）</h3>
+            </article>
+            <article>
+              <h3>辅助指标</h3>
+              <p>代理指标只用于快速扫视输出状态，不是综合质量分，也不替代人工核对。</p>
               <div class="table-scroll">
-                <table class="data-table">
+                <table>
                   <thead>
                     <tr>
-                      <th>指标说明</th>
+                      <th>指标</th>
                       <th>值</th>
                     </tr>
                   </thead>
-                  <tbody id="tbody-qp"></tbody>
+                  <tbody id="tbody-proxy"></tbody>
                 </table>
               </div>
-            </div>
+            </article>
           </div>
-        </section>
-
-        <section id="charts" class="section section--alt" data-reveal>
-          <div class="wrap">
-            <h2 class="section__title">图表解读</h2>
-            <p class="section__lead">以下为同一次跑批自动生成；每张图附「能说明什么」与「别读过头」。</p>
-
-            <div class="chart-grid">
-              <figure class="chart-card">
-                <img src="assets/charts/v0_2_deepseek/failure_type_distribution.png" alt="" loading="lazy" />
-                <figcaption>
-                  <strong>能说明什么：</strong>在初版、偏规则的失败分类里，本次样本都落在「未命中更高优先级失败」一档。<br />
-                  <strong>别读过头：</strong>不等于「从没犯错」或事实一定正确，更不覆盖语义幻觉。
-                </figcaption>
-              </figure>
-              <figure class="chart-card">
-                <img src="assets/charts/v0_2_deepseek/pass_rate_by_difficulty.png" alt="" loading="lazy" />
-                <figcaption>
-                  <strong>能说明什么：</strong>各难度在<strong>规则质检</strong>上的通过比例（样本：易 3 / 中 6 / 难 3）。<br />
-                  <strong>别读过头：</strong>不等于难题在「内容正确性」上天然更安全。
-                </figcaption>
-              </figure>
-              <figure class="chart-card">
-                <img src="assets/charts/v0_2_deepseek/pass_rate_by_task_type.png" alt="" loading="lazy" />
-                <figcaption>
-                  <strong>能说明什么：</strong>三类题型在规则层是否过关。<br />
-                  <strong>别读过头：</strong>题型不同风险点不同，不能因条形图齐平就认为可无差别上线。
-                </figcaption>
-              </figure>
-              <figure class="chart-card">
-                <img src="assets/charts/v0_2_deepseek/quality_proxy_overview.png" alt="" loading="lazy" />
-                <figcaption>
-                  <strong>能说明什么：</strong>若干代理指标的均值，用于粗扫一眼。<br />
-                  <strong>别读过头：</strong>不是综合质量分；某些条实现很粗，零值也不等于模型不合格。
-                </figcaption>
-              </figure>
-            </div>
-          </div>
-        </section>
-
-        <section id="meaning" class="section section--alt" data-reveal>
-          <div class="wrap">
-            <h2 class="section__title">这个项目的实际意义是什么？</h2>
-            <div class="grid-cards grid-cards--3">
-              <article class="card card--hover">
-                <h3 class="card__title">哪些可以先用 AI 试</h3>
-                <p class="card__body">规则清晰、格式固定、后果可控的任务，更适合先小范围试跑，用同一套题反复验。</p>
-              </article>
-              <article class="card card--hover">
-                <h3 class="card__title">哪些不能只看表面通过率</h3>
-                <p class="card__body">涉合规、对外口径、数字与引用时，「全绿」也可能是假象——必须保留人工闸门。</p>
-              </article>
-              <article class="card card--hover">
-                <h3 class="card__title">为什么更接近真实工作决策</h3>
-                <p class="card__body">关心的不是单次聊天爽感，而是「这套做法能不能反复交卷、哪里要加检索或复核」。</p>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <section id="compare" class="section section--alt" data-reveal>
-          <div class="wrap">
-            <h2 class="section__title">和常见 AI 评测有什么不同？</h2>
-            <div class="grid-cards grid-cards--4">
-              <article class="card card--hover">
-                <h3 class="card__title">不是模型榜单</h3>
-                <p class="card__body">目的不是给模型排座次，而是看固定工作方式在题上的稳定性。</p>
-              </article>
-              <article class="card card--hover">
-                <h3 class="card__title">不是抽象刷榜题</h3>
-                <p class="card__body">题目尽量贴近办公与知识场景，而不是为了难而难的孤立题。</p>
-              </article>
-              <article class="card card--hover">
-                <h3 class="card__title">更接近真实办公任务</h3>
-                <p class="card__body">抽取、改写、制度问答等，都是日常会碰到的活。</p>
-              </article>
-              <article class="card card--hover">
-                <h3 class="card__title">不把「通过」说成「高质量」</h3>
-                <p class="card__body">主动写明规则层与语义层的空隙，避免把展示写满。</p>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <section id="limits" class="section section--limits" data-reveal>
-          <div class="wrap">
-            <h2 class="section__title">局限与下一步</h2>
-            <ul class="limit-list">
-              <li>当前完整跑批仍以 <strong>direct</strong> 为主；多工作流对照需后续补齐。</li>
-              <li>样本量仍小，结论不能外推到所有业务。</li>
-              <li>代理指标仍粗，仅作辅助扫视。</li>
-              <li>失败归因仍是初版规则映射，复杂场景需迭代。</li>
-              <li>下一步才系统补：多工作流对比、人工评审、更强语义质量判断——本页不预设已完成。</li>
-            </ul>
-          </div>
-        </section>
-      </main>
-
-      <footer class="footer">
-        <div class="wrap">
-          <p>静态展示页 · 数据来自仓库内一次跑批汇总 · 详见 GitHub README</p>
+          <p class="load-line" id="load-status">正在加载本轮汇总数据...</p>
+          <div id="error-banner" class="error-banner" role="alert"></div>
         </div>
-      </footer>
+      </section>
+
+      <section id="meaning" class="section section--meaning" data-reveal>
+        <div class="wrap meaning-grid">
+          <div>
+            <p class="eyebrow">Interpretation</p>
+            <h2>项目的实际意义</h2>
+          </div>
+          <div class="meaning-copy">
+            <p>
+              这类评测适合先放在规则清晰、格式固定、后果可控的任务上试跑。它能帮助判断哪些环节已经适合进入半自动流程，哪些环节还需要检索、人工复核或更严格的语义评审。
+            </p>
+            <p>
+              对合规、数字口径、对外承诺和人事财务类任务，即使基础检查全绿，也应该保留人工把关。本项目更接近工作流决策：看一套做法能不能反复交卷，以及下一步该补哪种检查。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="limits" class="section section--limits" data-reveal>
+        <div class="wrap limits-box">
+          <p class="eyebrow">Status</p>
+          <h2>局限与下一步</h2>
+          <div class="limits-list">
+            <p>当前完整跑批以 direct baseline 为主，retrieve、planexec、humangate 仍是架构预留位置。</p>
+            <p>样本量仍小，本轮结果不能外推到所有业务场景。</p>
+            <p>quality proxy 仍是粗粒度信号，更深入的事实正确性需要人工或更严评测协议。</p>
+            <p>下一步会围绕多工作流对照、人工评审和更细的失败归因继续补齐。</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="task-drawer" id="task-drawer" aria-hidden="true">
+      <div class="task-drawer__backdrop" data-close-drawer></div>
+      <aside class="task-drawer__panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+        <button class="drawer-close" type="button" data-close-drawer aria-label="关闭题目详情">×</button>
+        <p class="eyebrow" id="drawer-type">Task</p>
+        <h2 id="drawer-title">题目详情</h2>
+        <div class="drawer-meta" id="drawer-meta"></div>
+        <div class="drawer-section">
+          <h3>场景</h3>
+          <p id="drawer-scenario"></p>
+        </div>
+        <div class="drawer-section">
+          <h3>输入材料摘要</h3>
+          <p id="drawer-input"></p>
+        </div>
+        <div class="drawer-section">
+          <h3>关键约束</h3>
+          <ul id="drawer-constraints"></ul>
+        </div>
+        <div class="drawer-section">
+          <h3>期望输出形式</h3>
+          <p id="drawer-output"></p>
+        </div>
+        <div class="drawer-section drawer-section--full" id="drawer-full-wrap">
+          <h3>更完整示例</h3>
+          <p id="drawer-full"></p>
+        </div>
+      </aside>
     </div>
+
+    <footer class="footer">
+      <div class="wrap">
+        <span>AI 任务可靠性评测台</span>
+        <span>数据来自仓库内 v0.2 direct 跑批汇总</span>
+      </div>
+    </footer>
 
     <script src="script.js" defer></script>
   </body>
