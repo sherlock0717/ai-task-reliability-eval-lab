@@ -7,7 +7,7 @@ name = "creative-agent-eval"
 version = "0.1.0"
 description = "DeepSeek V4 creative Agent loop reliability evaluation scaffold"
 requires-python = ">=3.11"
-dependencies = ["pydantic>=2.7"]
+dependencies = ["pydantic>=2.7", "httpx>=0.27,<1"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
