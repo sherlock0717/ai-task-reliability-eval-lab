@@ -21,11 +21,24 @@ def test_default_offline_plan_has_432_runs():
     assert len({run.run_id for run in plan.runs}) == plan.run_count
 
 
-def test_offline_matrix_writes_trace_and_regression_files(tmp_path):
+def test_offline_matrix_writes_trace_regression_and_ledger(tmp_path):
     cases = load_cases()
     plan = build_experiment_plan(cases)
     summary = run_offline_plan(plan, cases, tmp_path, max_runs=12)
-    assert summary["executed_run_count"] == 12
+    assert summary["completed_run_count"] == 12
     assert summary["terminal_states"] == {"completed": 12}
     assert len((tmp_path / "traces.jsonl").read_text(encoding="utf-8").splitlines()) == 12
     assert len((tmp_path / "boundary_regressions.jsonl").read_text(encoding="utf-8").splitlines()) == 12
+    ledger = json.loads((tmp_path / "ledger.json").read_text(encoding="utf-8"))
+    assert len(ledger["entries"]) == 12
+
+
+def test_offline_matrix_resume_skips_completed_runs(tmp_path):
+    cases = load_cases()
+    plan = build_experiment_plan(cases)
+    first = run_offline_plan(plan, cases, tmp_path, max_runs=5)
+    second = run_offline_plan(plan, cases, tmp_path, max_runs=5, resume=True)
+    assert first["completed_run_count"] == 5
+    assert second["completed_run_count"] == 10
+    assert second["remaining_run_count"] == plan.run_count - 10
+    assert len((tmp_path / "traces.jsonl").read_text(encoding="utf-8").splitlines()) == 10
