@@ -34,7 +34,38 @@ creative-agent-eval run-offline-matrix --out-dir outputs/offline_matrix
 
 - `traces.jsonl`：Loop运行轨迹；
 - `boundary_regressions.jsonl`：边界样例与当前Oracle的关系；
-- `summary.json`：运行数、Loop分布、标签分布和终止状态。
+- `ledger.json`：每个Run的完成状态、失败信息和尝试次数；
+- `summary.json`：已完成、失败、剩余数量以及Loop和标签分布。
+
+## 5. 断点续跑和运行上限
+
+先执行一部分：
+
+```bash
+creative-agent-eval run-offline-matrix \
+  --out-dir outputs/offline_matrix \
+  --max-runs 60
+```
+
+继续尚未完成的Run：
+
+```bash
+creative-agent-eval run-offline-matrix \
+  --out-dir outputs/offline_matrix \
+  --max-runs 60 \
+  --resume
+```
+
+限制本轮允许出现的失败数：
+
+```bash
+creative-agent-eval run-offline-matrix \
+  --out-dir outputs/offline_matrix \
+  --resume \
+  --max-failures 3
+```
+
+`--resume`会跳过账本中已经完成的Run。失败Run可以在后续调用中重新尝试，账本会累计尝试次数。
 
 ## 解释边界
 
