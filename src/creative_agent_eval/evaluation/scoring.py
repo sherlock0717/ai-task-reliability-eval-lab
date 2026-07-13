@@ -5,7 +5,9 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..models import BoundaryExample, EvalCase, RubricCriterion
+from ..runtime import RunTrace
 from .oracles import OracleResult, evaluate_automatic_checks
+from .trace_checks import evaluate_trace_checks
 
 
 class CriterionScore(BaseModel):
@@ -14,7 +16,7 @@ class CriterionScore(BaseModel):
     dimension: str
     score: int | None = Field(default=None, ge=0, le=2)
     verdict: Literal["pass", "borderline", "fail", "needs_review"]
-    source: Literal["deterministic_oracle", "pending_semantic"]
+    source: Literal["deterministic_oracle", "trace_oracle", "pending_semantic"]
     evidence: list[str] = Field(default_factory=list)
     reason: str
 
@@ -41,12 +43,14 @@ class BoundaryRegressionResult(BaseModel):
 _DIMENSION_TOKENS: dict[str, tuple[str, ...]] = {
     "constraint": ("forbidden", "prohibited", "ban", "inventory", "whitelist", "material", "required_field", "structure"),
     "appropriateness": ("constraint", "risk", "assumption", "verification", "evidence", "tool", "state", "timeline"),
-    "diversity": ("candidate_count", "response_count"),
-    "fluency": ("candidate_count", "response_count"),
-    "verification": ("assumption", "verification", "evidence", "tool"),
+    "diversity": ("candidate_count", "response_count", "category_count", "cluster_count", "dedup", "duplicate"),
+    "fluency": ("candidate_count", "response_count", "use_count", "item_count", "activity_count", "clue_count"),
+    "verification": ("assumption", "verification", "evidence", "tool", "revalidation"),
+    "recovery": ("event_acknowledged", "tool", "revalidation"),
+    "stopping": ("terminal_decision", "stop"),
     "coherence": ("state", "timeline", "order", "sequence", "structure"),
     "state": ("state", "timeline", "order", "sequence"),
-    "structure": ("required_field", "final_plan_structure", "output_structure", "json_schema"),
+    "structure": ("required_field", "required_section", "final_plan_structure", "output_structure", "json_schema", "fact_ledger", "risk_field"),
 }
 
 
@@ -55,6 +59,15 @@ def _summarize_oracles(results: list[OracleResult]) -> dict[str, int]:
         status: sum(result.status == status for result in results)
         for status in ("pass", "fail", "needs_review")
     }
+
+
+def _merge_oracles(output_results: list[OracleResult], trace_results: list[OracleResult]) -> list[OracleResult]:
+    merged = {result.check_id: result for result in output_results}
+    for result in trace_results:
+        current = merged.get(result.check_id)
+        if current is None or current.status == "needs_review" or result.status == "fail":
+            merged[result.check_id] = result
+    return list(merged.values())
 
 
 def _relevant_oracles(criterion: RubricCriterion, results: list[OracleResult]) -> list[OracleResult]:
@@ -85,15 +98,16 @@ def _score_criterion(criterion: RubricCriterion, results: list[OracleResult]) ->
         )
 
     evidence = [f"{item.check_id}:{item.status}" for item in relevant]
+    source = "trace_oracle" if any(item.capability == "trace_required" for item in relevant) else "deterministic_oracle"
     if any(item.status == "fail" for item in relevant):
         return CriterionScore(
             criterion_id=criterion.criterion_id,
             dimension=criterion.dimension,
             score=0,
             verdict="fail",
-            source="deterministic_oracle",
+            source=source,
             evidence=evidence,
-            reason="至少一项相关确定性检查失败。",
+            reason="至少一项相关检查失败。",
         )
     if all(item.status == "pass" for item in relevant):
         return CriterionScore(
@@ -101,22 +115,24 @@ def _score_criterion(criterion: RubricCriterion, results: list[OracleResult]) ->
             dimension=criterion.dimension,
             score=2,
             verdict="pass",
-            source="deterministic_oracle",
+            source=source,
             evidence=evidence,
-            reason="相关确定性检查均通过。",
+            reason="相关检查均通过。",
         )
     return CriterionScore(
         criterion_id=criterion.criterion_id,
         dimension=criterion.dimension,
         verdict="needs_review",
-        source="deterministic_oracle",
+        source=source,
         evidence=evidence,
         reason="相关检查包含待复核项，暂不形成确定性分数。",
     )
 
 
-def score_output(case: EvalCase, output: Any) -> CaseScore:
-    results = evaluate_automatic_checks(case, output)
+def score_output(case: EvalCase, output: Any, trace: RunTrace | None = None) -> CaseScore:
+    output_results = evaluate_automatic_checks(case, output)
+    trace_results = evaluate_trace_checks(case, trace).results if trace is not None else []
+    results = _merge_oracles(output_results, trace_results)
     criterion_scores = [_score_criterion(item, results) for item in case.rubric]
     hard_fail = any(item.status == "fail" and item.severity == "critical" for item in results)
     return CaseScore(
