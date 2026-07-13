@@ -4,6 +4,14 @@
 
 首版围绕 DeepSeek V4 设计。当前包含36个试测Case，每题具备正式题面、局部工具环境、结构化Gold、Rubric锚点和通过／边界／失败样例。仓库已经具备四种Loop的离线运行、fixture生成、评测合同审计、可靠性变体计划和单Case API入口，尚未发布正式模型成绩。
 
+## 数据来源说明
+
+四个Suite、任务族和公开来源筛选在逐题生成前已经确定。当前36题的题面、工具环境、Gold、Rubric和边界样例均由AI助手生成首稿，尚未完成用户逐题审定或独立专家验证。
+
+公开研究和Benchmark用于方法、构念、任务结构与错误分类参考，没有题目被登记为公开Benchmark原题。当前题集应理解为`adapted_parallel`与`original_diagnostic`试测数据。
+
+详细说明见[`docs/DATA_PROVENANCE_AUDIT.md`](docs/DATA_PROVENANCE_AUDIT.md)，逐题审定方法见[`docs/CASE_REVIEW_GUIDE.md`](docs/CASE_REVIEW_GUIDE.md)。
+
 ## 研究主线
 
 - 比较单次生成、批评修订、发散收敛和工具验证四种Loop；
@@ -35,6 +43,7 @@
 - 每题建立6类可靠性变体合同，共216个Variant Spec；
 - 自动检查按确定性、结构化输出、Trace依赖、Case fixture依赖和语义判断五类管理；
 - 离线运行支持账本、断点续跑、失败上限和CI Artifact；
+- CI可导出36题完整人工审阅包；
 - DeepSeek Provider支持V4-Flash、V4-Pro、思考模式和非思考模式；
 - GitHub Actions提供单Case、手动触发的API冒烟测试；
 - 正式模型结果目录仍为空。
@@ -56,6 +65,7 @@ creative-agent-eval audit-evaluation --out outputs/evaluation_audit.json
 creative-agent-eval plan-experiment --out outputs/offline_plan.json
 creative-agent-eval plan-variants --out outputs/variant_plan.json
 creative-agent-eval run-offline-matrix --out-dir outputs/offline_matrix
+python scripts/export_review_pack.py --out-dir outputs/review_pack
 pytest
 ```
 
@@ -70,12 +80,14 @@ pytest
 ## 主要文件
 
 - `docs/data/`：36个完整Case，页面和Python读取同一份数据；
+- `benchmark/provenance/`：题族来源和生成方式登记；
 - `benchmark/fixtures/`：手工fixture和生成规则说明；
 - `benchmark/schemas/case.schema.json`：Case数据结构；
 - `configs/loops/`：四种Loop条件；
 - `src/creative_agent_eval/loops/`：Loop执行；
 - `src/creative_agent_eval/tools/`：工具注册、fixture和生成器；
 - `src/creative_agent_eval/evaluation/`：Oracle、Criterion评分与评测审计；
+- `src/creative_agent_eval/review_pack.py`：完整审阅包生成；
 - `src/creative_agent_eval/experiments.py`：离线实验矩阵；
 - `src/creative_agent_eval/variants.py`：可靠性变体合同；
 - `src/creative_agent_eval/offline.py`：离线批量运行与账本；
@@ -85,12 +97,13 @@ pytest
 
 ## 后续工程任务
 
-1. 为需要精确物理参数、语义关系或状态转移的Case补充手工fixture；
-2. 将Trace依赖和Case fixture依赖的检查逐步实现为专用Oracle；
-3. 完成等价措辞与输出表面两类待生成变体的约束核对流程；
-4. 建立Trace、离线审计与变体计划的展示页面；
-5. 增加正式批量实验的预算控制和结果分析；
-6. 接入正式API跑批与统计分析。
+1. 完成用户对36题的逐题审定，记录`保留 / 修改 / 移除 / 重做`；
+2. 为需要精确物理参数、语义关系或状态转移的Case补充手工fixture；
+3. 将Trace依赖和Case fixture依赖的检查逐步实现为专用Oracle；
+4. 完成等价措辞与输出表面两类待生成变体的约束核对流程；
+5. 建立Trace、离线审计与变体计划的展示页面；
+6. 增加正式批量实验的预算控制和结果分析；
+7. 接入正式API跑批与统计分析。
 
 ## 研究边界
 
