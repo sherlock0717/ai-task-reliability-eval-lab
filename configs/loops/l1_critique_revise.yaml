@@ -1,0 +1,7 @@
+loop_id: L1
+name: critique_revise
+stages: [parse_task, generate_draft, critique, revise, terminal_check]
+candidate_count: 1
+max_iterations: 2
+tools_enabled: false
+critic_sees_hidden_reasoning: false

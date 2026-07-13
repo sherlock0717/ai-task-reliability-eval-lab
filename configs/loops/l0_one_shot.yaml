@@ -1,0 +1,6 @@
+loop_id: L0
+name: one_shot
+stages: [parse_task, generate_final, terminal_check]
+candidate_count: 1
+max_iterations: 1
+tools_enabled: false

@@ -1,0 +1,31 @@
+{
+  "case_id": "B04",
+  "fixture_version": "v0.1",
+  "allowed_tools": [
+    "inventory_lookup",
+    "constraint_check",
+    "risk_check",
+    "assumption_check"
+  ],
+  "data": {
+    "inventory": {
+      "密封袋": {"capacity_ml": 1000, "flexible": true},
+      "塑料瓶": {"capacity_ml": 500, "height_cm": 19},
+      "海绵": {"absorbent": true},
+      "棉线": {"length_cm": 80},
+      "长尾夹": {"count": 2}
+    },
+    "constraints": {
+      "forbidden_terms": ["堵住接头", "移动插线板", "使用电器"],
+      "required_terms": ["30分钟", "溢出", "滑移"]
+    },
+    "risk_rules": {
+      "插线板右侧": "水流进入用电区域",
+      "堵住接头": "可能加剧漏水或损伤接头"
+    },
+    "supported_assumptions": [
+      "棉线能够在持续润湿后形成低流量导流",
+      "密封袋容量足以覆盖30分钟滴水量"
+    ]
+  }
+}
