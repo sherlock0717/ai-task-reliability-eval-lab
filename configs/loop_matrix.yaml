@@ -1,0 +1,14 @@
+version: "0.1"
+loops:
+  - id: L0
+    name: one_shot
+    stages: [generate, final_validate]
+  - id: L1
+    name: critique_revise
+    stages: [generate, critique, revise, final_validate]
+  - id: L2
+    name: divergent_convergent
+    stages: [generate_candidates, deduplicate, cluster, select, revise, final_validate]
+  - id: L3
+    name: tool_grounded
+    stages: [generate_candidates, identify_assumptions, verify_tools, revise, final_validate]
