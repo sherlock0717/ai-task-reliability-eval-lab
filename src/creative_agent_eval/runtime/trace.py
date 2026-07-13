@@ -18,6 +18,12 @@ EventType = Literal[
     "tool_plan_created",
     "tool_requested",
     "tool_returned",
+    "tool_failed",
+    "tool_retry",
+    "event_acknowledged",
+    "revalidation_started",
+    "revalidation_completed",
+    "stop_decision",
     "criterion_checked",
     "run_completed",
     "run_failed",
@@ -50,6 +56,12 @@ class RunTrace(BaseModel):
     final_output: Any = None
     error: str | None = None
 
+    def events_of(self, event_type: EventType) -> list[TraceEvent]:
+        return [event for event in self.events if event.event_type == event_type]
+
+    def has_event(self, event_type: EventType) -> bool:
+        return any(event.event_type == event_type for event in self.events)
+
 
 class TraceRecorder:
     def __init__(self, case_id: str, loop_id: str, provider_id: str, seed: int) -> None:
@@ -76,6 +88,7 @@ class TraceRecorder:
         self.trace.final_output = final_output
         self.trace.terminal_state = "completed"
         self.trace.ended_at = utc_now()
+        self.emit("stop_decision", {"decision": "stop", "reason": "final_output_ready"})
         self.emit("run_completed", {"has_output": final_output is not None})
         return self.trace
 
@@ -83,6 +96,7 @@ class TraceRecorder:
         self.trace.error = str(error)
         self.trace.terminal_state = "failed"
         self.trace.ended_at = utc_now()
+        self.emit("stop_decision", {"decision": "stop", "reason": "run_failed"})
         self.emit("run_failed", {"error": self.trace.error})
         return self.trace
 
