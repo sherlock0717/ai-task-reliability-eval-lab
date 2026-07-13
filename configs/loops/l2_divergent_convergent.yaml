@@ -1,0 +1,6 @@
+loop_id: L2
+name: divergent_convergent
+stages: [parse_task, generate_candidates, deduplicate, cluster, compare, synthesize, terminal_check]
+candidate_count: 3
+max_iterations: 2
+tools_enabled: false
