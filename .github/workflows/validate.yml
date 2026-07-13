@@ -1,13 +1,55 @@
 name: Validate creative agent evaluation
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
 
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  paused-during-batch-update:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Validation is temporarily paused during a batched repository update."
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: python -m pip install -e '.[dev]'
+      - name: Validate 36-case registry
+        run: creative-agent-eval validate-registry
+      - name: Materialize deterministic fixtures
+        run: creative-agent-eval materialize-fixtures --out-dir /tmp/creative-agent-fixtures
+      - name: Audit evaluation contracts
+        run: creative-agent-eval audit-evaluation --out /tmp/evaluation-audit.json
+      - name: Build offline experiment plan
+        run: creative-agent-eval plan-experiment --out /tmp/offline-plan.json
+      - name: Run tests
+        run: pytest -q
+      - name: Dry-run all loop types
+        shell: bash
+        run: |
+          creative-agent-eval dry-run --case-id B04 --loop L0 --out /tmp/L0.json > /dev/null
+          creative-agent-eval dry-run --case-id B04 --loop L1 --out /tmp/L1.json > /dev/null
+          creative-agent-eval dry-run --case-id B04 --loop L2 --out /tmp/L2.json > /dev/null
+          creative-agent-eval dry-run --case-id B04 --loop L3 --fixture benchmark/fixtures/B04.json --out /tmp/L3.json > /dev/null
+      - name: Run offline regression sample
+        run: creative-agent-eval run-offline-matrix --out-dir /tmp/offline-matrix --max-runs 36
+      - name: Check page JavaScript
+        run: node --check docs/assets/app.js
+      - name: Check temporary files and phrasing
+        shell: bash
+        run: |
+          test ! -e noop.txt
+          test ! -e tree-test.txt
+          test ! -e README_REWRITE_PREVIEW.md
+          ! grep -RInE '不是.{0,18}而是|而不是' README.md docs src configs tests
