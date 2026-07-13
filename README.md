@@ -2,7 +2,7 @@
 
 这个仓库研究模型参数保持不变时，Agent 的生成、筛选、验证、修订和停止流程如何影响创造性任务表现。
 
-首版围绕 DeepSeek V4 设计。当前包含36个试测Case，每题具备正式题面、局部工具环境、结构化Gold、Rubric锚点和通过／边界／失败样例。仓库已经具备四种Loop的离线运行、fixture生成、评测合同审计和单Case API入口，尚未发布正式模型成绩。
+首版围绕 DeepSeek V4 设计。当前包含36个试测Case，每题具备正式题面、局部工具环境、结构化Gold、Rubric锚点和通过／边界／失败样例。仓库已经具备四种Loop的离线运行、fixture生成、评测合同审计、可靠性变体计划和单Case API入口，尚未发布正式模型成绩。
 
 ## 研究主线
 
@@ -32,6 +32,9 @@
 - 171条Rubric Criterion进入统一评分合同；
 - 108个通过／边界／失败样例进入回归管线；
 - 默认离线实验矩阵为36 Case × 4 Loop × 3标签，共432次运行；
+- 每题建立6类可靠性变体合同，共216个Variant Spec；
+- 自动检查按确定性、结构化输出、Trace依赖、Case fixture依赖和语义判断五类管理；
+- 离线运行支持账本、断点续跑、失败上限和CI Artifact；
 - DeepSeek Provider支持V4-Flash、V4-Pro、思考模式和非思考模式；
 - GitHub Actions提供单Case、手动触发的API冒烟测试；
 - 正式模型结果目录仍为空。
@@ -51,11 +54,12 @@ creative-agent-eval validate-registry
 creative-agent-eval materialize-fixtures --out-dir outputs/materialized_fixtures
 creative-agent-eval audit-evaluation --out outputs/evaluation_audit.json
 creative-agent-eval plan-experiment --out outputs/offline_plan.json
+creative-agent-eval plan-variants --out outputs/variant_plan.json
 creative-agent-eval run-offline-matrix --out-dir outputs/offline_matrix
 pytest
 ```
 
-离线管线说明见[`docs/OFFLINE_PIPELINE.md`](docs/OFFLINE_PIPELINE.md)。它验证数据结构、Loop、Trace、fixture、Oracle和评分合同，不产生模型能力结论。
+离线管线说明见[`docs/OFFLINE_PIPELINE.md`](docs/OFFLINE_PIPELINE.md)，扰动条件见[`docs/VARIANT_PROTOCOL.md`](docs/VARIANT_PROTOCOL.md)。这些流程验证数据结构、Loop、Trace、fixture、Oracle和评分合同，不产生模型能力结论。
 
 ## API运行
 
@@ -73,7 +77,8 @@ pytest
 - `src/creative_agent_eval/tools/`：工具注册、fixture和生成器；
 - `src/creative_agent_eval/evaluation/`：Oracle、Criterion评分与评测审计；
 - `src/creative_agent_eval/experiments.py`：离线实验矩阵；
-- `src/creative_agent_eval/offline.py`：离线批量运行；
+- `src/creative_agent_eval/variants.py`：可靠性变体合同；
+- `src/creative_agent_eval/offline.py`：离线批量运行与账本；
 - `src/creative_agent_eval/runtime/`：Trace结构；
 - `src/creative_agent_eval/providers/`：Scripted与DeepSeek Provider；
 - `docs/`：GitHub Pages和研究文档。
@@ -81,10 +86,10 @@ pytest
 ## 后续工程任务
 
 1. 为需要精确物理参数、语义关系或状态转移的Case补充手工fixture；
-2. 扩展Case级Oracle，降低`needs_review`比例；
-3. 增加等价措辞、无关信息、约束顺序和工具故障扰动；
-4. 建立Trace与离线审计结果页面；
-5. 增加断点续跑、预算控制和正式批量实验配置；
+2. 将Trace依赖和Case fixture依赖的检查逐步实现为专用Oracle；
+3. 完成等价措辞与输出表面两类待生成变体的约束核对流程；
+4. 建立Trace、离线审计与变体计划的展示页面；
+5. 增加正式批量实验的预算控制和结果分析；
 6. 接入正式API跑批与统计分析。
 
 ## 研究边界
