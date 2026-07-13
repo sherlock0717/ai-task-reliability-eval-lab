@@ -7,6 +7,9 @@ on:
       - agent/rebuild-creative-agent-loop-eval
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -21,6 +24,13 @@ jobs:
         run: creative-agent-eval validate-registry
       - name: Run tests
         run: pytest -q
+      - name: Dry-run all loop types
+        shell: bash
+        run: |
+          creative-agent-eval dry-run --case-id B04 --loop L0 --out /tmp/L0.json > /dev/null
+          creative-agent-eval dry-run --case-id B04 --loop L1 --out /tmp/L1.json > /dev/null
+          creative-agent-eval dry-run --case-id B04 --loop L2 --out /tmp/L2.json > /dev/null
+          creative-agent-eval dry-run --case-id B04 --loop L3 --fixture benchmark/fixtures/B04.json --out /tmp/L3.json > /dev/null
       - name: Check page JavaScript
         run: node --check docs/assets/app.js
       - name: Check temporary files and phrasing
