@@ -1,22 +1,55 @@
-import json
+from __future__ import annotations
+
 from collections import Counter
 from pathlib import Path
-from .models import EvalCaseSpec
+import json
 
-DEFAULT_REGISTRY = Path(__file__).resolve().parents[2] / "benchmark" / "cases" / "case_registry_v0_1.jsonl"
+from .models import EvalCase
 
-def load_registry(path: Path = DEFAULT_REGISTRY) -> list[EvalCaseSpec]:
-    cases=[]
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if line.strip(): cases.append(EvalCaseSpec.model_validate(json.loads(line)))
+DEFAULT_REGISTRY_DIR = Path(__file__).resolve().parents[2] / "docs" / "data"
+CASE_FILES = (
+    "a_psychometric_probes.json",
+    "b_creative_problem_solving.json",
+    "c_creative_artifacts.json",
+    "d_loop_adaptation_recovery.json",
+)
+
+
+def load_cases(path: Path = DEFAULT_REGISTRY_DIR) -> list[EvalCase]:
+    files = [path] if path.is_file() else [path / name for name in CASE_FILES]
+    cases: list[EvalCase] = []
+    for file_path in files:
+        with file_path.open("r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+        cases.extend(EvalCase.model_validate(item) for item in payload["cases"])
     return cases
 
-def validate_registry(path: Path = DEFAULT_REGISTRY) -> dict:
-    cases=load_registry(path)
-    ids=[c.case_id for c in cases]
-    dup=[k for k,v in Counter(ids).items() if v>1]
-    if dup: raise ValueError(f"duplicate IDs: {dup}")
-    counts=Counter(c.suite for c in cases)
-    expected={"psychometric_probe":9,"constrained_problem_solving":9,"creative_artifact":9,"loop_adaptation_recovery":9}
-    if dict(counts)!=expected: raise ValueError(f"unexpected suite counts: {dict(counts)}")
-    return {"case_count":len(cases),"suite_counts":dict(counts),"prompt_finalized_count":sum(c.prompt_finalized for c in cases),"status_counts":dict(Counter(c.status for c in cases))}
+
+def validate_registry(path: Path = DEFAULT_REGISTRY_DIR) -> dict[str, object]:
+    cases = load_cases(path)
+    ids = [case.case_id for case in cases]
+    duplicates = [case_id for case_id, count in Counter(ids).items() if count > 1]
+    if duplicates:
+        raise ValueError(f"duplicate case IDs: {duplicates}")
+
+    expected = {
+        "psychometric_probe": 9,
+        "creative_problem_solving": 9,
+        "creative_artifact": 9,
+        "loop_adaptation_recovery": 9,
+    }
+    counts = dict(Counter(case.suite for case in cases))
+    if counts != expected:
+        raise ValueError(f"unexpected suite distribution: {counts}")
+
+    labels = {example.label for case in cases for example in case.boundary_examples}
+    if labels != {"pass", "borderline", "fail"}:
+        raise ValueError(f"boundary labels incomplete: {labels}")
+
+    return {
+        "case_count": len(cases),
+        "suite_counts": counts,
+        "prompt_finalized_count": sum(case.prompt_finalized for case in cases),
+        "pilot_count": sum(case.status == "pilot" for case in cases),
+        "rubric_criterion_count": sum(len(case.rubric) for case in cases),
+    }
