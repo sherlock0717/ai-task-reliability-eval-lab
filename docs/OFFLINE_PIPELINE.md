@@ -24,7 +24,15 @@ creative-agent-eval plan-experiment --out outputs/offline_plan.json
 
 默认矩阵为36 Case × 4 Loop × 3边界标签，共432次离线运行。此矩阵用于验证运行器和结果结构，不代表模型实验。
 
-## 4. 执行离线矩阵
+## 4. 生成可靠性变体计划
+
+```bash
+creative-agent-eval plan-variants --out outputs/variant_plan.json
+```
+
+每题登记等价措辞、约束顺序、无关信息、输出表面、工具顺序和工具异常六类条件，共216个Variant Spec。其中约束顺序、无关信息、工具顺序和工具异常已经生成确定性配置；等价措辞和输出表面仍保留为待核对计划。
+
+## 5. 执行离线矩阵
 
 ```bash
 creative-agent-eval run-offline-matrix --out-dir outputs/offline_matrix
@@ -37,7 +45,7 @@ creative-agent-eval run-offline-matrix --out-dir outputs/offline_matrix
 - `ledger.json`：每个Run的完成状态、失败信息和尝试次数；
 - `summary.json`：已完成、失败、剩余数量以及Loop和标签分布。
 
-## 5. 断点续跑和运行上限
+## 6. 断点续跑和运行上限
 
 先执行一部分：
 
