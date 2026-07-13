@@ -1,0 +1,93 @@
+{
+  "manifest_version": "v0.1",
+  "dataset_version": "v0.2-pilot",
+  "summary": {
+    "case_count": 36,
+    "assistant_generated_first_draft": 36,
+    "direct_public_item_copy": 0,
+    "human_reviewed": 0,
+    "expert_validated": 0,
+    "status_note": "Suite structure and source families were selected before drafting. Current prompts, Gold, rubric anchors and boundary examples were produced by the assistant and remain pilot material."
+  },
+  "global_fields": {
+    "authorship": "assistant_generated_first_draft",
+    "human_review_status": "pending_user_review",
+    "expert_validation_status": "not_performed",
+    "direct_public_item_copy": false,
+    "license_note": "No public benchmark item is intentionally reproduced verbatim. Similarity and leakage still require manual review."
+  },
+  "groups": [
+    {
+      "group_id": "A_CDAT",
+      "case_ids": ["A01", "A02", "A03"],
+      "track": "adapted_parallel",
+      "reference_templates": ["Beyond Divergent Creativity / CDAT (2026)"],
+      "reference_mode": "method_and_task_structure_reference",
+      "design_intent": "Conditional divergence under contextual appropriateness constraints."
+    },
+    {
+      "group_id": "A_AUT",
+      "case_ids": ["A04", "A05", "A06"],
+      "track": "adapted_parallel",
+      "reference_templates": ["Alternative Uses Task", "DAT and SemDis as auxiliary scoring references"],
+      "reference_mode": "task_family_reference",
+      "design_intent": "Alternative-use generation with low-contamination objects, safety and mechanism requirements."
+    },
+    {
+      "group_id": "A_DRAT",
+      "case_ids": ["A07", "A08", "A09"],
+      "track": "adapted_parallel",
+      "reference_templates": ["Divergent Remote Association Test / DRAT (2026)"],
+      "reference_mode": "method_and_task_structure_reference",
+      "design_intent": "Combined divergent and convergent association using project-created target words."
+    },
+    {
+      "group_id": "B_MACGYVER",
+      "case_ids": ["B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B09"],
+      "track": "adapted_parallel",
+      "reference_templates": ["MacGyver creative problem-solving benchmark"],
+      "reference_mode": "constraint_and_failure_structure_reference",
+      "design_intent": "Finite-resource creative problem solving with physical feasibility and tool verification."
+    },
+    {
+      "group_id": "C_PRODUCT_WRITING",
+      "case_ids": ["C01", "C02", "C03", "C04", "C05", "C06"],
+      "track": "adapted_parallel",
+      "reference_templates": ["WritingBench (2025)", "AGC-Bench (2026) coverage framework"],
+      "reference_mode": "domain_and_instance_rubric_reference",
+      "design_intent": "Constrained product, mechanism and communication artifacts with instance-specific rubrics."
+    },
+    {
+      "group_id": "C_CREATIVE_WRITING",
+      "case_ids": ["C07", "C08", "C09"],
+      "track": "adapted_parallel",
+      "reference_templates": ["LitBench (2025)", "creative-writing evaluation literature"],
+      "reference_mode": "evaluation_bias_and_comparison_reference",
+      "design_intent": "Constrained narrative generation with ambiguity, indirect emotion and state consistency."
+    },
+    {
+      "group_id": "D_FEEDBACK_RECOVERY",
+      "case_ids": ["D01", "D02", "D03", "D04", "D05", "D06"],
+      "track": "original_diagnostic",
+      "reference_templates": ["Reflexion (2023)", "AgentPRM and process-reward research"],
+      "reference_mode": "agent_failure_taxonomy_reference",
+      "design_intent": "Dynamic constraints, faulty critique, conflicting evidence and recovery behavior."
+    },
+    {
+      "group_id": "D_MEMORY_TRANSFER",
+      "case_ids": ["D07", "D08"],
+      "track": "original_diagnostic",
+      "reference_templates": ["Reflexion (2023)", "agent trajectory synthesis and evaluation research"],
+      "reference_mode": "memory_and_trajectory_failure_reference",
+      "design_intent": "Irrelevant memory, partially wrong experience rules and negative transfer."
+    },
+    {
+      "group_id": "D_STOPPING",
+      "case_ids": ["D09"],
+      "track": "original_diagnostic",
+      "reference_templates": ["Reflexion (2023)", "AgentPRM and progress-tracking research"],
+      "reference_mode": "stopping_and_progress_reference",
+      "design_intent": "Correct termination after success criteria are met."
+    }
+  ]
+}
