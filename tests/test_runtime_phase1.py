@@ -74,8 +74,10 @@ def test_one_shot_scripted_provider_records_trace() -> None:
         "run_started",
         "model_requested",
         "model_responded",
+        "stop_decision",
         "run_completed",
     ]
+    assert trace.events_of("stop_decision")[0].payload["decision"] == "stop"
 
 
 def test_trace_jsonl_round_trip(tmp_path: Path) -> None:
@@ -84,4 +86,6 @@ def test_trace_jsonl_round_trip(tmp_path: Path) -> None:
     recorder.complete("done")
     path = tmp_path / "trace.jsonl"
     recorder.append_jsonl(path)
-    assert '"case_id":"A01"' in path.read_text(encoding="utf-8")
+    text = path.read_text(encoding="utf-8")
+    assert '"case_id":"A01"' in text
+    assert '"event_type":"stop_decision"' in text
