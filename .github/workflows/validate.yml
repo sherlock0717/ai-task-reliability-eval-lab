@@ -1,13 +1,66 @@
 name: Validate creative agent evaluation
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
 
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  paused-during-batch-update:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Validation is temporarily paused during a batched repository update."
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: python -m pip install -e '.[dev]'
+      - name: Prepare validation output
+        run: mkdir -p outputs/ci_validation
+      - name: Validate 36-case registry
+        run: creative-agent-eval validate-registry
+      - name: Materialize deterministic fixtures
+        run: creative-agent-eval materialize-fixtures --out-dir outputs/ci_validation/materialized_fixtures
+      - name: Audit evaluation contracts
+        run: creative-agent-eval audit-evaluation --out outputs/ci_validation/evaluation_audit.json
+      - name: Build offline experiment plan
+        run: creative-agent-eval plan-experiment --out outputs/ci_validation/offline_plan.json
+      - name: Run tests
+        run: pytest -q
+      - name: Dry-run all loop types
+        shell: bash
+        run: |
+          mkdir -p outputs/ci_validation/dry_runs
+          creative-agent-eval dry-run --case-id B04 --loop L0 --out outputs/ci_validation/dry_runs/L0.json > /dev/null
+          creative-agent-eval dry-run --case-id B04 --loop L1 --out outputs/ci_validation/dry_runs/L1.json > /dev/null
+          creative-agent-eval dry-run --case-id B04 --loop L2 --out outputs/ci_validation/dry_runs/L2.json > /dev/null
+          creative-agent-eval dry-run --case-id B04 --loop L3 --fixture benchmark/fixtures/B04.json --out outputs/ci_validation/dry_runs/L3.json > /dev/null
+      - name: Run offline regression sample
+        run: creative-agent-eval run-offline-matrix --out-dir outputs/ci_validation/offline_matrix --max-runs 36
+      - name: Check page JavaScript
+        run: node --check docs/assets/app.js
+      - name: Check temporary files and phrasing
+        shell: bash
+        run: |
+          test ! -e noop.txt
+          test ! -e tree-test.txt
+          test ! -e README_REWRITE_PREVIEW.md
+          ! grep -RInE '不是.{0,18}而是|而不是' README.md docs src configs tests
+      - name: Upload offline validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-validation-${{ github.run_id }}
+          path: outputs/ci_validation
+          if-no-files-found: warn
+          retention-days: 30
