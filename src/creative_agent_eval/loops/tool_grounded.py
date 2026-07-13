@@ -48,6 +48,7 @@ def _arguments(value: Any) -> dict[str, Any]:
 @dataclass(frozen=True)
 class ToolGroundedLoop:
     loop_id: str = "L3"
+    max_retries_per_call: int = 1
 
     def run(
         self,
@@ -83,10 +84,29 @@ class ToolGroundedLoop:
                     name=str(function["name"]),
                     arguments=_arguments(function.get("arguments", {})),
                 )
-                recorder.emit("tool_requested", request.model_dump(mode="json"))
-                result = registry.call(request, context)
-                results.append(result.model_dump(mode="json"))
-                recorder.emit("tool_returned", result.model_dump(mode="json"))
+                attempt = 0
+                while True:
+                    recorder.emit("tool_requested", {**request.model_dump(mode="json"), "attempt": attempt + 1})
+                    result = registry.call(request, context)
+                    if result.ok:
+                        results.append(result.model_dump(mode="json"))
+                        recorder.emit("tool_returned", {**result.model_dump(mode="json"), "attempt": attempt + 1})
+                        break
+                    recorder.emit("tool_failed", {**result.model_dump(mode="json"), "attempt": attempt + 1})
+                    if attempt >= self.max_retries_per_call:
+                        results.append(result.model_dump(mode="json"))
+                        break
+                    attempt += 1
+                    recorder.emit(
+                        "tool_retry",
+                        {
+                            "call_id": request.call_id,
+                            "name": request.name,
+                            "next_attempt": attempt + 1,
+                            "reason": result.error_type,
+                        },
+                    )
+            recorder.emit("revalidation_started", {"tool_result_count": len(results)})
             final_prompt = (
                 "请依据工具证据修订并输出最终结果。\n"
                 f"题目：{case.prompt}\n初步计划：{json.dumps(plan.content, ensure_ascii=False)}\n"
@@ -97,6 +117,13 @@ class ToolGroundedLoop:
             )
             recorder.emit("model_responded", {"stage": "final", "model": final.model})
             recorder.emit("revision_created", {"content": final.content, "tool_results": len(results)})
+            recorder.emit(
+                "revalidation_completed",
+                {
+                    "tool_result_count": len(results),
+                    "successful_tool_results": sum(bool(item.get("ok")) for item in results),
+                },
+            )
             return recorder.complete(final.content)
         except Exception as exc:
             return recorder.fail(exc)
