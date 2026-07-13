@@ -13,6 +13,7 @@ from .providers import DeepSeekConfig, DeepSeekProvider, ScriptedProvider
 from .registry import DEFAULT_REGISTRY_DIR, load_cases, validate_registry
 from .tools import build_default_registry, load_fixture
 from .tools.materialize import write_materialized_fixtures
+from .variants import build_variant_plan, write_variant_plan
 
 
 def _find_case(case_id: str):
@@ -85,6 +86,9 @@ def main() -> None:
     plan.add_argument("--repeats", type=int, default=1)
     plan.add_argument("--seed-base", type=int, default=0)
 
+    variants = subcommands.add_parser("plan-variants")
+    variants.add_argument("--out", type=Path, required=True)
+
     offline = subcommands.add_parser("run-offline-matrix")
     offline.add_argument("--out-dir", type=Path, required=True)
     offline.add_argument("--repeats", type=int, default=1)
@@ -131,6 +135,12 @@ def main() -> None:
         experiment = build_experiment_plan(cases, repeats=args.repeats, seed_base=args.seed_base)
         write_experiment_plan(experiment, args.out)
         _write_json({"case_count": experiment.case_count, "run_count": experiment.run_count, "out": str(args.out)}, None)
+        return
+
+    if args.command == "plan-variants":
+        variant_plan = build_variant_plan(cases)
+        write_variant_plan(variant_plan, args.out)
+        _write_json({"case_count": variant_plan.case_count, "variant_count": variant_plan.variant_count, "out": str(args.out)}, None)
         return
 
     if args.command == "run-offline-matrix":
