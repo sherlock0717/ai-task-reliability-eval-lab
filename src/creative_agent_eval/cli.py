@@ -90,6 +90,8 @@ def main() -> None:
     offline.add_argument("--repeats", type=int, default=1)
     offline.add_argument("--seed-base", type=int, default=0)
     offline.add_argument("--max-runs", type=int)
+    offline.add_argument("--max-failures", type=int)
+    offline.add_argument("--resume", action="store_true")
 
     dry_run = subcommands.add_parser("dry-run")
     dry_run.add_argument("--case-id", required=True)
@@ -133,7 +135,14 @@ def main() -> None:
 
     if args.command == "run-offline-matrix":
         experiment = build_experiment_plan(cases, repeats=args.repeats, seed_base=args.seed_base)
-        summary = run_offline_plan(experiment, cases, args.out_dir, max_runs=args.max_runs)
+        summary = run_offline_plan(
+            experiment,
+            cases,
+            args.out_dir,
+            max_runs=args.max_runs,
+            resume=args.resume,
+            max_failures=args.max_failures,
+        )
         _write_json(summary, None)
         return
 
