@@ -38,7 +38,10 @@ jobs:
       - name: Plan reliability variants
         run: creative-agent-eval plan-variants --out outputs/ci_validation/variant_plan.json
       - name: Run tests
-        run: pytest -q
+        shell: bash
+        run: |
+          set -o pipefail
+          pytest -q --tb=short 2>&1 | tee outputs/ci_validation/pytest.log
       - name: Dry-run all loop types
         shell: bash
         run: |
