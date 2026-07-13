@@ -7,7 +7,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .evaluation.scoring import score_boundary_example
+from .evaluation.scoring import score_boundary_example, score_output
+from .evaluation.trace_checks import evaluate_trace_checks
 from .experiments import ExperimentPlan, ExperimentRunSpec
 from .loops import CritiqueReviseLoop, DivergentConvergentLoop, OneShotLoop, ToolGroundedLoop
 from .models import EvalCase
@@ -86,6 +87,18 @@ def _write_ledger(ledger: RunLedger, path: Path) -> None:
     )
 
 
+def _count_jsonl(path: Path, key: str) -> Counter:
+    counts = Counter()
+    if not path.exists():
+        return counts
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            value = json.loads(line).get(key)
+            if value is not None:
+                counts[str(value)] += 1
+    return counts
+
+
 def run_offline_plan(
     plan: ExperimentPlan,
     cases: list[EvalCase],
@@ -98,6 +111,8 @@ def run_offline_plan(
     case_map = {case.case_id: case for case in cases}
     trace_path = out_dir / "traces.jsonl"
     regression_path = out_dir / "boundary_regressions.jsonl"
+    score_path = out_dir / "case_scores.jsonl"
+    trace_eval_path = out_dir / "trace_evaluations.jsonl"
     ledger_path = out_dir / "ledger.json"
     ledger = _load_ledger(ledger_path, plan.plan_version, resume)
 
@@ -112,7 +127,12 @@ def run_offline_plan(
     new_failures = 0
     stop_reason: str | None = None
 
-    with trace_path.open(mode, encoding="utf-8") as trace_handle, regression_path.open(mode, encoding="utf-8") as regression_handle:
+    with (
+        trace_path.open(mode, encoding="utf-8") as trace_handle,
+        regression_path.open(mode, encoding="utf-8") as regression_handle,
+        score_path.open(mode, encoding="utf-8") as score_handle,
+        trace_eval_path.open(mode, encoding="utf-8") as trace_eval_handle,
+    ):
         for run in selected_runs:
             previous = ledger.entries.get(run.run_id)
             attempts = (previous.attempt_count if previous else 0) + 1
@@ -125,8 +145,16 @@ def run_offline_plan(
 
                 example = next(item for item in case.boundary_examples if item.label == run.boundary_label)
                 regression = score_boundary_example(case, example)
-                payload = {"run_id": run.run_id, **regression.model_dump(mode="json")}
-                regression_handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+                regression_payload = {"run_id": run.run_id, **regression.model_dump(mode="json")}
+                regression_handle.write(json.dumps(regression_payload, ensure_ascii=False) + "\n")
+
+                case_score = score_output(case, trace.final_output, trace=trace)
+                score_payload = {"run_id": run.run_id, **case_score.model_dump(mode="json")}
+                score_handle.write(json.dumps(score_payload, ensure_ascii=False) + "\n")
+
+                trace_evaluation = evaluate_trace_checks(case, trace)
+                trace_payload = {"run_id": run.run_id, **trace_evaluation.model_dump(mode="json")}
+                trace_eval_handle.write(json.dumps(trace_payload, ensure_ascii=False) + "\n")
             except Exception as exc:
                 status = "failed"
                 error = str(exc)
@@ -151,11 +179,25 @@ def run_offline_plan(
     terminal = Counter(entry.status for entry in ledger.entries.values())
     loop_counts = Counter(entry.loop_id for entry in ledger.entries.values())
     label_counts = Counter(entry.boundary_label for entry in ledger.entries.values())
-    regression_counts = Counter()
-    if regression_path.exists():
-        for line in regression_path.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                regression_counts[json.loads(line)["regression_status"]] += 1
+    regression_counts = _count_jsonl(regression_path, "regression_status")
+    criterion_verdicts = Counter()
+    hard_fail_count = 0
+    if score_path.exists():
+        for line in score_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            payload = json.loads(line)
+            hard_fail_count += int(bool(payload.get("hard_fail")))
+            for item in payload.get("criterion_scores", []):
+                criterion_verdicts[str(item.get("verdict"))] += 1
+    trace_statuses = Counter()
+    if trace_eval_path.exists():
+        for line in trace_eval_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            payload = json.loads(line)
+            for status_name, count in payload.get("status_counts", {}).items():
+                trace_statuses[str(status_name)] += int(count)
 
     summary: dict[str, Any] = {
         "plan_version": plan.plan_version,
@@ -170,8 +212,13 @@ def run_offline_plan(
         "loop_counts": dict(loop_counts),
         "label_counts": dict(label_counts),
         "boundary_regression_attempts": dict(regression_counts),
+        "criterion_verdicts": dict(criterion_verdicts),
+        "hard_fail_run_count": hard_fail_count,
+        "trace_oracle_statuses": dict(trace_statuses),
         "traces": trace_path.name,
         "boundary_regressions": regression_path.name,
+        "case_scores": score_path.name,
+        "trace_evaluations": trace_eval_path.name,
         "ledger": ledger_path.name,
     }
     (out_dir / "summary.json").write_text(
