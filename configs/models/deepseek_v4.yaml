@@ -1,0 +1,19 @@
+provider: deepseek
+api_base_env: DEEPSEEK_API_BASE
+api_key_env: DEEPSEEK_API_KEY
+candidates:
+  - candidate_id: v4_flash_non_thinking
+    model: deepseek-v4-flash
+    thinking: false
+  - candidate_id: v4_flash_thinking
+    model: deepseek-v4-flash
+    thinking: true
+  - candidate_id: v4_pro_non_thinking
+    model: deepseek-v4-pro
+    thinking: false
+  - candidate_id: v4_pro_thinking
+    model: deepseek-v4-pro
+    thinking: true
+notes:
+  - 正式运行前再次核对官方模型名、接口参数、价格和限流。
+  - 工具调用多轮请求需按官方文档保存必要的上下文与推理字段。
