@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 
@@ -31,6 +32,11 @@ def test_review_pack_contains_full_case_contracts(tmp_path: Path) -> None:
     manifest = load_lineage_manifest(MANIFEST)
     summary = build_review_pack(cases, manifest, tmp_path)
     assert summary["case_count"] == 36
+    assert summary["oracle_review_requirements"] == {
+        "case_fixture_required": 31,
+        "trace_required": 18,
+        "semantic_required": 13,
+    }
 
     full_json = json.loads((tmp_path / "cases_full.json").read_text(encoding="utf-8"))
     assert len(full_json["cases"]) == 36
@@ -52,4 +58,17 @@ def test_review_pack_contains_full_case_contracts(tmp_path: Path) -> None:
 
     review_sheet = (tmp_path / "review_sheet.csv").read_text(encoding="utf-8-sig")
     assert review_sheet.count("\n") >= 36
+
+    requirements = json.loads((tmp_path / "oracle_requirements.json").read_text(encoding="utf-8"))
+    assert requirements["requirement_count"] == 62
+    assert requirements["capability_counts"] == {
+        "trace_required": 18,
+        "case_fixture_required": 31,
+        "semantic_required": 13,
+    }
+    with (tmp_path / "case_fixture_requirements.csv").open(encoding="utf-8-sig", newline="") as handle:
+        assert len(list(csv.DictReader(handle))) == 31
+    with (tmp_path / "oracle_requirements.csv").open(encoding="utf-8-sig", newline="") as handle:
+        assert len(list(csv.DictReader(handle))) == 62
+
     assert (tmp_path / "provenance_summary.json").exists()
