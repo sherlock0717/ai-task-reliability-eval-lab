@@ -3,11 +3,16 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
+from .evaluation import audit_evaluation
+from .experiments import build_experiment_plan, write_experiment_plan
 from .loops import CritiqueReviseLoop, DivergentConvergentLoop, OneShotLoop, ToolGroundedLoop
+from .offline import run_offline_plan
 from .providers import DeepSeekConfig, DeepSeekProvider, ScriptedProvider
 from .registry import DEFAULT_REGISTRY_DIR, load_cases, validate_registry
 from .tools import build_default_registry, load_fixture
+from .tools.materialize import write_materialized_fixtures
 
 
 def _find_case(case_id: str):
@@ -24,6 +29,14 @@ def _write_trace(trace, out: Path | None) -> None:
     print(trace.model_dump_json(indent=2))
 
 
+def _write_json(payload: Any, out: Path | None) -> None:
+    text = json.dumps(payload, ensure_ascii=False, indent=2)
+    if out:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(text, encoding="utf-8")
+    print(text)
+
+
 def _run_scripted(case, label: str, loop_id: str, seed: int, fixture_path: Path | None):
     example = next(item for item in case.boundary_examples if item.label == label)
     output = example.output
@@ -31,7 +44,7 @@ def _run_scripted(case, label: str, loop_id: str, seed: int, fixture_path: Path 
         return OneShotLoop().run(case, ScriptedProvider({case.case_id: {"final": output}}), seed=seed)
     if loop_id == "L1":
         provider = ScriptedProvider(
-            {case.case_id: {"draft": output, "critique": "检查硬约束和适用性。", "revision": output}}
+            {case.case_id: {"draft": output, "critique": "检查硬约束、适用性与证据。", "revision": output}}
         )
         return CritiqueReviseLoop().run(case, provider, seed=seed)
     if loop_id == "L2":
@@ -60,6 +73,24 @@ def main() -> None:
     validate = subcommands.add_parser("validate-registry")
     validate.add_argument("--path", type=Path, default=DEFAULT_REGISTRY_DIR)
 
+    materialize = subcommands.add_parser("materialize-fixtures")
+    materialize.add_argument("--out-dir", type=Path, required=True)
+
+    audit = subcommands.add_parser("audit-evaluation")
+    audit.add_argument("--out", type=Path)
+    audit.add_argument("--fail-on-error", action="store_true")
+
+    plan = subcommands.add_parser("plan-experiment")
+    plan.add_argument("--out", type=Path, required=True)
+    plan.add_argument("--repeats", type=int, default=1)
+    plan.add_argument("--seed-base", type=int, default=0)
+
+    offline = subcommands.add_parser("run-offline-matrix")
+    offline.add_argument("--out-dir", type=Path, required=True)
+    offline.add_argument("--repeats", type=int, default=1)
+    offline.add_argument("--seed-base", type=int, default=0)
+    offline.add_argument("--max-runs", type=int)
+
     dry_run = subcommands.add_parser("dry-run")
     dry_run.add_argument("--case-id", required=True)
     dry_run.add_argument("--label", choices=["pass", "borderline", "fail"], default="pass")
@@ -77,9 +108,33 @@ def main() -> None:
     api_run.add_argument("--out", type=Path, required=True)
 
     args = parser.parse_args()
+    cases = load_cases()
 
     if args.command == "validate-registry":
         print(json.dumps(validate_registry(args.path), ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "materialize-fixtures":
+        _write_json(write_materialized_fixtures(cases, args.out_dir), None)
+        return
+
+    if args.command == "audit-evaluation":
+        result = audit_evaluation(cases)
+        _write_json(result.model_dump(mode="json"), args.out)
+        if args.fail_on_error and result.finding_counts.get("error", 0):
+            raise SystemExit(1)
+        return
+
+    if args.command == "plan-experiment":
+        experiment = build_experiment_plan(cases, repeats=args.repeats, seed_base=args.seed_base)
+        write_experiment_plan(experiment, args.out)
+        _write_json({"case_count": experiment.case_count, "run_count": experiment.run_count, "out": str(args.out)}, None)
+        return
+
+    if args.command == "run-offline-matrix":
+        experiment = build_experiment_plan(cases, repeats=args.repeats, seed_base=args.seed_base)
+        summary = run_offline_plan(experiment, cases, args.out_dir, max_runs=args.max_runs)
+        _write_json(summary, None)
         return
 
     if args.command == "dry-run":
