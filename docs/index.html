@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeepSeek V4 创造性 Agent Loop 评测</title>
+  <meta name="description" content="36个创造性Agent试测Case：题面、工具环境、Gold、Rubric与边界样例。">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <header class="hero">
+    <nav><a href="#overview">研究概览</a><a href="#cases">Case目录</a><a href="#method">方法</a><a href="https://github.com/sherlock0717/ai-task-reliability-eval-lab">GitHub</a></nav>
+    <div class="hero-inner">
+      <p class="eyebrow">Creative Agent Loop Evaluation · Pilot v0.2</p>
+      <h1>观察创造性任务在 Agent Loop 中怎样完成、失效与恢复</h1>
+      <p class="lede">36个试测Case覆盖条件化发散、约束问题解决、创造产品和Loop恢复。当前页面展示评测设计，不包含API成绩。</p>
+      <div class="hero-actions"><a class="button primary" href="#cases">浏览36个Case</a><a class="button" href="PROJECT_CHARTER.md">阅读项目章程</a></div>
+    </div>
+  </header>
+
+  <main>
+    <section id="overview" class="section">
+      <div class="section-heading"><p class="eyebrow">Overview</p><h2>评测对象分为结果、过程和系统三层</h2></div>
+      <div class="cards three">
+        <article><span>01</span><h3>创造结果</h3><p>新颖性、适用性、硬约束、连贯性和可执行性分别记录。</p></article>
+        <article><span>02</span><h3>Agent过程</h3><p>候选生成、聚类筛选、工具验证、修订增益和停止判断进入Trace。</p></article>
+        <article><span>03</span><h3>评测可靠性</h3><p>确定性规则、结构化Gold、模型Judge与人工裁决相互校验。</p></article>
+      </div>
+      <div class="stats"><div><strong>36</strong><span>试测Case</span></div><div><strong>4</strong><span>任务Suite</span></div><div><strong>4</strong><span>Loop条件</span></div><div><strong>0</strong><span>当前API成绩</span></div></div>
+    </section>
+
+    <section id="cases" class="section panel">
+      <div class="section-heading"><p class="eyebrow">Casebook</p><h2>题面、工具、Gold和Rubric已补齐</h2><p>使用筛选器查看不同任务。点击卡片可展开完整材料。</p></div>
+      <div class="filters"><button class="active" data-suite="all">全部</button><button data-suite="psychometric_probe">A 构念探针</button><button data-suite="creative_problem_solving">B 问题解决</button><button data-suite="creative_artifact">C 创造产品</button><button data-suite="loop_adaptation_recovery">D 适应恢复</button></div>
+      <div id="case-grid" class="case-grid" aria-live="polite"></div>
+    </section>
+
+    <section id="method" class="section">
+      <div class="section-heading"><p class="eyebrow">Method</p><h2>四种Loop使用同一批任务和评分协议</h2></div>
+      <div class="timeline">
+        <article><b>L0</b><h3>单次生成</h3><p>作为模型原始交付基线。</p></article>
+        <article><b>L1</b><h3>批评修订</h3><p>检查一次独立批评能否带来净改善。</p></article>
+        <article><b>L2</b><h3>发散收敛</h3><p>比较多个机制候选，避免只做表面改写。</p></article>
+        <article><b>L3</b><h3>工具验证</h3><p>先标出关键假设，再依据局部工具证据选择和修订。</p></article>
+      </div>
+    </section>
+
+    <section class="section note">
+      <h2>后训练部分的使用方式</h2>
+      <p>当某类失败在平行题、多个Loop和人工复核中重复出现，项目会整理可能的数据形态与候选训练方法，例如轨迹SFT、偏好优化、奖励模型或Agent RL。这里提供研究假设和数据设计，不输出训练效果结论。</p>
+      <div class="links"><a href="SOURCE_SCREENING.md">资料筛选</a><a href="EVAL_PROTOCOL.md">评测协议</a><a href="RUBRIC_MANUAL.md">Rubric手册</a><a href="POST_TRAINING_DIAGNOSIS.md">后训练诊断</a></div>
+    </section>
+  </main>
+
+  <dialog id="case-dialog"><button class="dialog-close" aria-label="关闭">×</button><div id="dialog-content"></div></dialog>
+  <footer>DeepSeek V4 Creative Agent Loop Evaluation · Pilot materials only</footer>
+  <script src="assets/app.js"></script>
+</body>
+</html>
