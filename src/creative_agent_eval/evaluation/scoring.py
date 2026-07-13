@@ -5,7 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..models import BoundaryExample, EvalCase, RubricCriterion
-from .oracles import OracleResult, evaluate_automatic_checks, summarize_oracles
+from .oracles import OracleResult, evaluate_automatic_checks
 
 
 class CriterionScore(BaseModel):
@@ -48,6 +48,13 @@ _DIMENSION_TOKENS: dict[str, tuple[str, ...]] = {
     "state": ("state", "timeline", "order", "sequence"),
     "structure": ("required_field", "final_plan_structure", "output_structure", "json_schema"),
 }
+
+
+def _summarize_oracles(results: list[OracleResult]) -> dict[str, int]:
+    return {
+        status: sum(result.status == status for result in results)
+        for status in ("pass", "fail", "needs_review")
+    }
 
 
 def _relevant_oracles(criterion: RubricCriterion, results: list[OracleResult]) -> list[OracleResult]:
@@ -114,7 +121,7 @@ def score_output(case: EvalCase, output: Any) -> CaseScore:
     hard_fail = any(item.status == "fail" and item.severity == "critical" for item in results)
     return CaseScore(
         case_id=case.case_id,
-        oracle_summary=summarize_oracles(results),
+        oracle_summary=_summarize_oracles(results),
         criterion_scores=criterion_scores,
         hard_fail=hard_fail,
         review_required=any(item.verdict == "needs_review" for item in criterion_scores),
