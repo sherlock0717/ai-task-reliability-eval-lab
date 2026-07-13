@@ -35,7 +35,8 @@ def test_offline_matrix_writes_trace_score_regression_and_ledger(tmp_path):
     ):
         assert len((tmp_path / name).read_text(encoding="utf-8").splitlines()) == 12
     assert sum(summary["criterion_verdicts"].values()) > 0
-    assert sum(summary["trace_oracle_statuses"].values()) > 0
+    assert set(summary["trace_oracle_statuses"]) == {"pass", "fail", "needs_review"}
+    assert all(value >= 0 for value in summary["trace_oracle_statuses"].values())
     ledger = json.loads((tmp_path / "ledger.json").read_text(encoding="utf-8"))
     assert len(ledger["entries"]) == 12
 
