@@ -1,0 +1,7 @@
+loop_id: L3
+name: tool_grounded
+stages: [parse_task, generate_candidates, identify_assumptions, verify, select, revise, terminal_check]
+candidate_count: 3
+max_iterations: 3
+tools_enabled: true
+max_tool_calls: 8
